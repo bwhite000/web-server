@@ -1,0 +1,15 @@
+name: web_server
+version: 1.0.7
+author: Brandon White <jennexproject+webserver@gmail.com>
+description: An efficient server library for quickly creating a WebServer and handling HTTP requests, WebSocket connections, and API requests.
+homepage: http://jennex.it/now/dev
+environment:
+  sdk: '>=1.9.0 <2.0.0'
+dependencies:
+  event_listener:
+    git: https://github.com/bwhite000/event-listener.git
+    version: '>=0.0.0 <0.1.0'
+  path: '>=1.0.0 <2.0.0'
+  server_logger:
+    git: https://github.com/bwhite000/server-logger.git
+    version: '>=0.1.0 <0.2.0'
