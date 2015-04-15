@@ -8,6 +8,7 @@ import "package:event_listener/event_listener.dart";
 import "package:path/path.dart" as path;
 import "package:server_logger/server_logger.dart" as ServerLogger;
 
+part "src/web_server/api_response.dart";
 part "src/web_server/http_server_request_handler.dart";
 part "src/web_server/web_socket_request_payload.dart";
 part "src/web_server/web_socket_server_request_handler.dart";

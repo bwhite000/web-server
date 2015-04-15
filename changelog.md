@@ -1,6 +1,12 @@
 WebServer
 =========
 
+v1.0.8 (4.15.2015)
+------------------
+* Added the ApiResponse and ApiErrorResponse classes to help make sending API data easier and
+  with consistent formatting.
+* Updated the "example/web_server.dart" file to show uses of the new ApiResponse class.
+
 v1.0.7 (4.15.2015)
 --------------------
 * Added built-in support for basic authentication path registering.

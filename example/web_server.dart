@@ -24,8 +24,20 @@ void main() {
       ..serveStaticFile(new UrlData('/static_page'), '/web/static_page.html', enableCaching: false)
 
       // Handle requiring Basic Authentication on the specified Url, allowing only the users in the authentication list.
-      ..registerPathWithBasicAuth(new UrlData('/auth/required'),
-            const <AuthUserData>[const AuthUserData('bwhite', 'dXNlcjpwYXNzd29yZA==')]).listen((final HttpRequest httpRequest) { /*...*/ });
+      // The required credentials are "user:password" (from the BasicAuth base64 encoded -> 'dXNlcjpwYXNzd29yZA==')
+      ..registerPathWithBasicAuth(new UrlData('/api/auth/required/dateTime'),
+            const <AuthUserData>[const AuthUserData('username', 'dXNlcjpwYXNzd29yZA==')]).listen((final HttpRequest httpRequest)
+            {
+              // Create a new ApiResponse object for returning the API data
+              final ApiResponse apiResponse = new ApiResponse()
+                  ..addData('dateTime', '${new DateTime.now()}'); // Add the DateTime
+
+              // Respond to the Url request
+              httpRequest.response
+                  ..headers.contentType = ContentType.JSON
+                  ..write(apiResponse.toJsonEncoded())
+                  ..close();
+            });
 
   // Attach WebSocket command listeners and base events
   localWebServer.webSocketServerHandler
