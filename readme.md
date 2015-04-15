@@ -7,6 +7,9 @@ connections, and API requests in the Dart language.
 Includes extra nice features, such as setting a parameter to require Basic Authentication for a Url,
 with all of the difficult auth checking and responding taken care of by the server.
 
+Example
+-------
+
 ~~~dart
 // Initialize the WebServer  
 final WebServer localWebServer = new WebServer(InternetAddress.LOOPBACK_IP_V4, 8080,
@@ -14,7 +17,7 @@ final WebServer localWebServer = new WebServer(InternetAddress.LOOPBACK_IP_V4, 8
       
 // Attach HttpServer pages and event handlers
 localWebServer.httpServerHandler
-    // Automatically parse for indexing and serve all recursive items in this
+    // Automatically recursively parse and serve all items in this
     // directory matching the accepted file types.
     ..serveVirtualDirectory('/web/', const <String>['html', 'css', 'dart', 'js']);
 ~~~
