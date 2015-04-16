@@ -10,7 +10,7 @@ with all of the difficult auth checking and responding taken care of by the serv
 Example
 -------
 
-Please check out the ["examples/"](examples/) folder in this package for better details.
+Please check out the ["example/"](example/) folder in this package for better details.
 
 ~~~dart
 // Initialize the WebServer  
