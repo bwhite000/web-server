@@ -10,6 +10,8 @@ with all of the difficult auth checking and responding taken care of by the serv
 Example
 -------
 
+Please check out the ["examples/"](examples/) folder in this package for better details.
+
 ~~~dart
 // Initialize the WebServer  
 final WebServer localWebServer = new WebServer(InternetAddress.LOOPBACK_IP_V4, 8080,
@@ -19,5 +21,5 @@ final WebServer localWebServer = new WebServer(InternetAddress.LOOPBACK_IP_V4, 8
 localWebServer.httpServerHandler
     // Automatically recursively parse and serve all items in this
     // directory matching the accepted file types.
-    ..serveVirtualDirectory('/web/', const <String>['html', 'css', 'dart', 'js']);
+    .serveVirtualDirectory('web', const <String>['html', 'css', 'dart', 'js']);
 ~~~
