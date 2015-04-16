@@ -88,8 +88,6 @@ class _HttpServerRequestHandler {
             possibleDirectoryPath += '${httpRequest.uri.pathSegments[i]}/';
           }
 
-          ServerLogger.log(possibleDirectoryPath);
-
           // Check if the URL matches a registered directory and that a URL ID is in the FunctionStore
           if (this._possibleDirectories.containsKey(possibleDirectoryPath) &&
               this._functionStore.fnStore.containsKey(this._possibleDirectories[possibleDirectoryPath]))
@@ -100,7 +98,7 @@ class _HttpServerRequestHandler {
 
             this._functionStore.runEvent(urlId, httpRequest);
           } else { // Respond with 404 error because nothing was matched.
-            ServerLogger.log('No url match found.');
+            ServerLogger.log('No registered url match found.');
 
             httpRequest.response
                 ..statusCode = HttpStatus.NOT_FOUND
@@ -216,7 +214,22 @@ class _HttpServerRequestHandler {
     return this._functionStore[urlData.id];
   }
 
-  Future<Null> serveStaticFile(final UrlData urlData, final String pathToFile, {final bool enableCaching: true}) async {
+  /**
+   * Serve a static file, with optional caching.
+   *
+   * [urlData] - The path to navigate to in your browser to load this file.
+   * [pathToFile] - The path on your computer to read the file contents from.
+   * [enableCaching] (opt) - Should this file be cached in memory after it is first read? Default is true.
+   * [isRelativeFilePath] (opt) - Is the [pathToFile] value a relative path? Default is true.
+   */
+  Future<Null> serveStaticFile(final UrlData urlData, String pathToFile, {
+    final bool enableCaching: true,
+    final bool isRelativeFilePath: true
+  }) async {
+    if (isRelativeFilePath) {
+      pathToFile = '${path.dirname(Platform.script.path)}/$pathToFile'.replaceAll('%20', ' ');
+    }
+
     final File file = new File(pathToFile);
 
     if (await file.exists()) {
@@ -272,20 +285,29 @@ class _HttpServerRequestHandler {
   }
 
   /**
-   * Serve this entire directory in a default way, but only serve the allowed file extensions.
+   * Serve this entire directory automatically, but only for the allowed file extensions.
    *
-   * [pathToDirectory] - The path from the main.dart driver to this directory; e.g. "web/public/dart".
+   * [pathToDirectory] - The path to this directory to server files recursively from.
+   * [supportedFileExtensions] - A list of file extensions (without the "." before the extension name) that are allowed to be served from this directory.
+   * [includeDirNameInPath] - Should the folder being served also have it's name in the browser navigation path; such as serving a 'js/' folder while retaining 'js/' in the browser Url; default is false.
+   * [shouldFollowLinks] - Should SymLinks be treated as they are in this directory and, therefore, served?
    */
-  Future<Null> serveVirtualDirectory(final String pathToDirectory, final List<String> supportedFileExtensions, {
+  Future<Null> serveVirtualDirectory(String pathToDirectory, final List<String> supportedFileExtensions, {
     final bool includeDirNameInPath: false,
     final bool shouldFollowLinks: false,
-    final String prefixWithDirName: ''
+    final String prefixWithDirName: '',
+    final bool isRelativeDirPath: true,
+    final bool parseForFilesRecursively: true
   }) async {
     ServerLogger.log('_HttpServerRequestHandler.serveVirtualDirectory(String, List, {bool}) -> Future<Null>');
 
     // Make sure that supported file extensions were supplied.
     if (supportedFileExtensions == null || supportedFileExtensions.length == 0) {
       throw 'There were no supported file extensions set. Nothing would have been included from this directory.';
+    }
+
+    if (isRelativeDirPath) {
+      pathToDirectory = '${path.dirname(Platform.script.path)}/$pathToDirectory'.replaceAll('%20', ' ');
     }
 
     // Get the directory for virtualizing
@@ -297,7 +319,7 @@ class _HttpServerRequestHandler {
     // If the directory exists
     if (await dir.exists()) {
       // Loop through all of the entities in this directory and determine which ones to make serve later.
-      dir.list(recursive: true, followLinks: shouldFollowLinks).listen((final FileSystemEntity entity) async {
+      dir.list(recursive: parseForFilesRecursively, followLinks: shouldFollowLinks).listen((final FileSystemEntity entity) async {
         final FileStat fileStat = await entity.stat();
 
         for (String supportedFileExtension in supportedFileExtensions) {
@@ -320,7 +342,7 @@ class _HttpServerRequestHandler {
         }
       });
     } else {
-      ServerLogger.error('The directory path supplied was not found in the filesystem at: ($pathToDirectory)');
+      ServerLogger.error('The directory path supplied was not found in the filesystem at: (${dir.path})');
     }
   }
 

@@ -1,5 +1,5 @@
 name: web_server
-version: 1.0.8
+version: 1.0.9
 author: Brandon White <jennexproject+webserver@gmail.com>
 description: An efficient server library for quickly creating a WebServer and handling HTTP requests, WebSocket connections, and API requests.
 homepage: https://google.com/+BrandonWhite

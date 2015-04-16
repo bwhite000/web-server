@@ -1,6 +1,19 @@
 WebServer
 =========
 
+v1.0.9 (4.16.2015)
+--------------------
+* Added a new example for creating virtual directories at "example/virtual_directory.dart".
+* Removed some logging that may have been misleading.
+* Using a relative sub-directory path in `serveVirtualDirectory()` could lead to incorrect
+  path following if the developer did not execute their script from the terminal in the project's
+  root directory (such as using an Editor where it goes from the SDK's bin/ folder); fixed this
+  by building an absolute directory path using `Platform.script.path` and getting the parent folder
+  for the main execution, then building the relative path from there; this will prevent a lot of
+  potential confusion for future developers using this Dart package; also added this to
+  `serveStaticFile()`.
+* Improved some of the comments and code in the example files.
+
 v1.0.8 (4.15.2015)
 ------------------
 * Added the ApiResponse and ApiErrorResponse classes to help make sending API data easier and
@@ -18,6 +31,7 @@ v1.0.7 (4.15.2015)
 * (Again) Cleaned-up some files by removing redundant sub-files with the same name as the library
   (e.g. "lib/src/web_server/web_server.dart" -> "lib/src/web_server.dart" - already existed
   to include the sub-file by the same name).
+* Initial GitHub package commit!!!
 
 v1.0.6 (4.11.2015)
 -----------------
