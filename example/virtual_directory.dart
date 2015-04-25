@@ -3,7 +3,7 @@ import "package:web_server/web_server.dart";
 
 void main() {
   // Initialize the WebServer
-  final WebServer localWebServer = new WebServer(InternetAddress.LOOPBACK_IP_V4, 8080,
+  final WebServer localWebServer = new WebServer(InternetAddress.LOOPBACK_IP_V4, 8989,
       hasHttpServer: true, hasWebSocketServer: true);
 
   // Log out some of the connection information
