@@ -1,11 +1,17 @@
-part of WebServer.webServer;
+part of WebServer;
 
-class _HttpServerRequestHandler {
+/**
+ * This is part of the WebServer object used for setting up HttpRequest
+ * handlers.
+ */
+class HttpServerRequestHandler {
   final FunctionStore _functionStore = new FunctionStore();
   final Map<String, int> _possibleFiles = <String, int>{};
   final Map<String, int> _possibleDirectories = <String, int>{};
   final List<_VirtualDirectoryFileData> _virtualDirectoryFiles = <_VirtualDirectoryFileData>[];
-  final List<PathDataWithAuth> _pathDataForAuthList = <PathDataWithAuth>[];
+  final List<_PathDataWithAuth> _pathDataForAuthList = <_PathDataWithAuth>[];
+
+  /// The message text that will be returned in the response when a BasicAuth request fails.
   final String strForUnauthorizedError = '401 - Unauthorized';
 
   static const Map<String, List<String>> _fileExtensions = const <String, List<String>>{
@@ -16,6 +22,7 @@ class _HttpServerRequestHandler {
     ".txt": const <String>["text", "plain"],
     ".png": const <String>["image", "png"],
     ".jpg": const <String>["image", "jpg"],
+    ".jpeg": const <String>["image", "jpg"],
     ".gif": const <String>["image", "gif"],
     ".webp": const <String>["image", "webp"],
     ".svg": const <String>["image", "svg+xml"],
@@ -26,27 +33,29 @@ class _HttpServerRequestHandler {
     ".rar": const <String>["application", "x-rar-compressed"],
     ".zip": const <String>["application", "zip"]
   };
-  bool shouldBeVerbose = false;
+  static bool shouldBeVerbose = false;
 
-  _HttpServerRequestHandler();
+  HttpServerRequestHandler();
 
   // Util
   void _onHttpRequest(final HttpRequest httpRequest) {
-    ServerLogger.log('_HttpServerRequestHandler.onRequest()');
-    ServerLogger.log('Requested Url: ${httpRequest.uri.path}');
+    if (HttpServerRequestHandler.shouldBeVerbose) {
+      ServerLogger.log('_HttpServerRequestHandler.onRequest()');
+      ServerLogger.log('Requested Url: ${httpRequest.uri.path}');
+    }
 
     final String path = httpRequest.uri.path;
 
     // Is there basic auth needed for this path.
     if (this._doesThisPathRequireAuth(path)) { // BasicAuth IS required
-      final PathDataWithAuth pathDataWithAuthForPath = this._getAcceptedCredentialsForPath(path);
-      final AuthCheckResults authCheckResults = this._checkAuthFromRequest(httpRequest, pathDataWithAuthForPath);
+      final _PathDataWithAuth pathDataWithAuthForPath = this._getAcceptedCredentialsForPath(path);
+      final _AuthCheckResults authCheckResults = this._checkAuthFromRequest(httpRequest, pathDataWithAuthForPath);
 
       if (authCheckResults.didPass) {
         final int urlId = this._possibleFiles[path];
         this._functionStore.runEvent(urlId, httpRequest);
       } else {
-        _HttpServerRequestHandler.sendRequiredBasicAuthResponse(httpRequest, this.strForUnauthorizedError);
+        HttpServerRequestHandler.sendRequiredBasicAuthResponse(httpRequest, this.strForUnauthorizedError);
       }
 
       return;
@@ -55,7 +64,7 @@ class _HttpServerRequestHandler {
       if (this._possibleFiles.containsKey(path) &&
           this._functionStore.fnStore.containsKey(this._possibleFiles[path]))
       {
-        ServerLogger.log('Url has matched to a file. Routing to it...');
+        if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('Url has matched to a file. Routing to it...');
 
         final int urlId = this._possibleFiles[path];
 
@@ -69,7 +78,7 @@ class _HttpServerRequestHandler {
             wasVirtualFileMatched = true;
             try {
               // Serve the matched virtual file
-              _HttpServerRequestHandler._serveStandardFile('${virtualFilePathData.directoryPath}${virtualFilePathData.virtualFilePath}', httpRequest);
+              HttpServerRequestHandler._serveStandardFile('${virtualFilePathData.directoryPath}${virtualFilePathData.virtualFilePath}', httpRequest);
             } catch (err) {
               ServerLogger.error(err);
             }
@@ -92,13 +101,13 @@ class _HttpServerRequestHandler {
           if (this._possibleDirectories.containsKey(possibleDirectoryPath) &&
               this._functionStore.fnStore.containsKey(this._possibleDirectories[possibleDirectoryPath]))
           {
-            ServerLogger.log('Url has matched to a directory. Routing to it...');
+            if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('Url has matched to a directory. Routing to it...');
 
             final int urlId = this._possibleDirectories[possibleDirectoryPath];
 
             this._functionStore.runEvent(urlId, httpRequest);
           } else { // Respond with 404 error because nothing was matched.
-            ServerLogger.log('No registered url match found.');
+            if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('No registered url match found.');
 
             httpRequest.response
                 ..statusCode = HttpStatus.NOT_FOUND
@@ -126,13 +135,13 @@ class _HttpServerRequestHandler {
    * [authUserList] - A list of
    */
   Stream<HttpRequest> registerPathWithBasicAuth(final UrlData pathToRegister, final List<AuthUserData> authUserList) {
-    ServerLogger.log('HttpServerRequestHandler.registerPathWithAuth() -> Stream<HttpRequest>');
+    if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('HttpServerRequestHandler.registerPathWithAuth() -> Stream<HttpRequest>');
 
     if (authUserList.length == 0) {
       throw 'There are no users in the list of authorized users.';
     }
 
-    final PathDataWithAuth pathDataWithAuth = new PathDataWithAuth(pathToRegister.path, authUserList);
+    final _PathDataWithAuth pathDataWithAuth = new _PathDataWithAuth(pathToRegister.path, authUserList);
 
     this._pathDataForAuthList.add(pathDataWithAuth);
     this._possibleFiles[pathToRegister.path] = pathToRegister.id;
@@ -142,7 +151,7 @@ class _HttpServerRequestHandler {
 
   /// Does this request path need to be handled by the authentication engine?
   bool _doesThisPathRequireAuth(final String pathName) {
-    for (PathDataWithAuth pathDataWithAuth in this._pathDataForAuthList) {
+    for (_PathDataWithAuth pathDataWithAuth in this._pathDataForAuthList) {
       // Do the paths match?
       if (pathDataWithAuth.urlPath == pathName) {
         return true;
@@ -152,8 +161,8 @@ class _HttpServerRequestHandler {
     return false;
   }
 
-  PathDataWithAuth _getAcceptedCredentialsForPath(final String pathName) {
-    for (PathDataWithAuth pathDataWithAuth in this._pathDataForAuthList) {
+  _PathDataWithAuth _getAcceptedCredentialsForPath(final String pathName) {
+    for (_PathDataWithAuth pathDataWithAuth in this._pathDataForAuthList) {
       // Do the paths match?
       if (pathDataWithAuth.urlPath == pathName) {
         return pathDataWithAuth;
@@ -163,10 +172,10 @@ class _HttpServerRequestHandler {
     return null;
   }
 
-  AuthCheckResults _checkAuthFromRequest(final HttpRequest httpRequest, final PathDataWithAuth acceptedCredentialsPathData) {
+  _AuthCheckResults _checkAuthFromRequest(final HttpRequest httpRequest, final _PathDataWithAuth acceptedCredentialsPathData) {
     // If no auth header supplied
     if (httpRequest.headers.value(HttpHeaders.AUTHORIZATION) == null) {
-      return const AuthCheckResults(false);
+      return const _AuthCheckResults(false);
     }
 
     const int MAX_ALLOWED_CHARACTER_RANGE = 256;
@@ -175,10 +184,10 @@ class _HttpServerRequestHandler {
     final String clientProvidedAuthInfo = authHeaderStr.substring(0, trimRange).replaceFirst(new RegExp('^Basic '), ''); // Remove the prefixed "Basic " from auth header
 
     if (acceptedCredentialsPathData.doCredentialsMatch(clientProvidedAuthInfo)) {
-      return new AuthCheckResults(true, acceptedCredentialsPathData.getUsernameForCredentials(clientProvidedAuthInfo));
+      return new _AuthCheckResults(true, acceptedCredentialsPathData.getUsernameForCredentials(clientProvidedAuthInfo));
     }
 
-    return const AuthCheckResults(false);
+    return const _AuthCheckResults(false);
   }
 
   /// Send an HTTP 401 Auth required response
@@ -226,8 +235,11 @@ class _HttpServerRequestHandler {
     final bool enableCaching: true,
     final bool isRelativeFilePath: true
   }) async {
-    if (isRelativeFilePath) {
-      pathToFile = '${path.dirname(Platform.script.path)}/$pathToFile'.replaceAll('%20', ' ');
+    if (path.isRelative(pathToFile) && isRelativeFilePath) {
+      final Uri _scriptRuntimeUri = Uri.parse(Platform.script.path);
+      final Uri _absoluteUriAfterResolving = _scriptRuntimeUri.resolve(pathToFile);
+
+      pathToFile = _absoluteUriAfterResolving.toFilePath();
     }
 
     final File file = new File(pathToFile);
@@ -260,7 +272,7 @@ class _HttpServerRequestHandler {
             ..close();
       });
     } else {
-      ServerLogger.error('The file at path ($pathToFile) was not found in the filesystem; unable to serve it.');
+      if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.error('The file at path ($pathToFile) was not found in the filesystem; unable to serve it.');
     }
   }
 
@@ -271,6 +283,7 @@ class _HttpServerRequestHandler {
    * [varModifiers] - A key/value map of modifiers to automatically replace in the file
    * [enableCaching] - Should the file be cached in-memory; updates the cache when a newer copy is found.
    */
+  /*
   static Future<Null> serveFileWithAuth(final String pathToFile, {
     final Map<String, dynamic> varModifiers: const <String, dynamic>{},
     final bool enableCaching: false
@@ -283,6 +296,7 @@ class _HttpServerRequestHandler {
       ServerLogger.error('The file at path ($pathToFile) was not found in the filesystem; unable to serve it.');
     }
   }
+  */
 
   /**
    * Serve this entire directory automatically, but only for the allowed file extensions.
@@ -291,6 +305,9 @@ class _HttpServerRequestHandler {
    * [supportedFileExtensions] - A list of file extensions (without the "." before the extension name) that are allowed to be served from this directory.
    * [includeDirNameInPath] - Should the folder being served also have it's name in the browser navigation path; such as serving a 'js/' folder while retaining 'js/' in the browser Url; default is false.
    * [shouldFollowLinks] - Should SymLinks be treated as they are in this directory and, therefore, served?
+   *
+   *     new WebServer().serveVirtualDirectory('web/js', ['.js'],
+   *       parseForFilesRecursively: false);
    */
   Future<Null> serveVirtualDirectory(String pathToDirectory, final List<String> supportedFileExtensions, {
     final bool includeDirNameInPath: false,
@@ -299,15 +316,22 @@ class _HttpServerRequestHandler {
     final bool isRelativeDirPath: true,
     final bool parseForFilesRecursively: true
   }) async {
-    ServerLogger.log('_HttpServerRequestHandler.serveVirtualDirectory(String, List, {bool}) -> Future<Null>');
+    if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('_HttpServerRequestHandler.serveVirtualDirectory(String, List, {bool}) -> Future<Null>');
 
     // Make sure that supported file extensions were supplied.
     if (supportedFileExtensions == null || supportedFileExtensions.length == 0) {
       throw 'There were no supported file extensions set. Nothing would have been included from this directory.';
     }
 
-    if (isRelativeDirPath) {
-      pathToDirectory = '${path.dirname(Platform.script.path)}/$pathToDirectory'.replaceAll('%20', ' ');
+    if (path.isRelative(pathToDirectory) && isRelativeDirPath) {
+      final Uri _scriptRuntimeUri = Uri.parse(Platform.script.path);
+      final Uri _absoluteUriAfterResolving = _scriptRuntimeUri.resolve(pathToDirectory);
+
+      pathToDirectory = _absoluteUriAfterResolving.toFilePath();
+
+      if (HttpServerRequestHandler.shouldBeVerbose) {
+        ServerLogger.log('Resolved the Uri to be: ($pathToDirectory)');
+      }
     }
 
     // Get the directory for virtualizing
@@ -346,14 +370,14 @@ class _HttpServerRequestHandler {
     }
   }
 
-  static void serveVirtualDirectoryWithAuth() {}
+  /*static void serveVirtualDirectoryWithAuth() {}*/
 
   /**
    * Serve the file with zero processing done to it.
    */
   static Future<Null> _serveStandardFile(final String pathToFile, final HttpRequest httpRequest) async {
     try {
-      ServerLogger.log('_HttpServerRequestHandler::_serveStandardFile(String, HttpRequest) -> Future<Null>');
+      if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('_HttpServerRequestHandler::_serveStandardFile(String, HttpRequest) -> Future<Null>');
 
       final File standardFile = new File(pathToFile);
 
@@ -377,8 +401,8 @@ class _HttpServerRequestHandler {
           contentsOfFile = await standardFile.readAsBytes();
 
           // Determine the content type to send
-          if (_HttpServerRequestHandler._fileExtensions.containsKey(fileExtension)) {
-            final List<String> _mimeTypePieces = _HttpServerRequestHandler._fileExtensions[path.extension(standardFile.path)];
+          if (HttpServerRequestHandler._fileExtensions.containsKey(fileExtension)) {
+            final List<String> _mimeTypePieces = HttpServerRequestHandler._fileExtensions[path.extension(standardFile.path)];
 
             httpRequest.response.headers.contentType = new ContentType(_mimeTypePieces[0], _mimeTypePieces[1]);
           } else {
@@ -397,19 +421,25 @@ class _HttpServerRequestHandler {
           } else {
             httpRequest.response.write(contentsOfFile);
           }
-        } else {
-          contentsOfFile = await standardFile.readAsString();
 
+          httpRequest.response.close();
+        } else {
           // Determine the content type to send
-          if (_HttpServerRequestHandler._fileExtensions.containsKey(fileExtension)) {
-            final List<String> _mimeTypePieces = _HttpServerRequestHandler._fileExtensions[path.extension(standardFile.path)];
+          if (HttpServerRequestHandler._fileExtensions.containsKey(fileExtension)) {
+            final List<String> _mimeTypePieces = HttpServerRequestHandler._fileExtensions[path.extension(standardFile.path)];
 
             httpRequest.response.headers.contentType = new ContentType(_mimeTypePieces[0], _mimeTypePieces[1], charset: "utf-8");
           } else {
             httpRequest.response.headers.contentType = new ContentType("text", "plain", charset: "utf-8");
           }
 
-          httpRequest.response.write(contentsOfFile);
+          // Read the file, and regardless of encoding, convert it to UTF-8
+          // and send it to the client
+          standardFile.openRead().transform(UTF8.decoder).listen((final String data) {
+            httpRequest.response.write(data);
+          }, onDone: () {
+            httpRequest.response.close();
+          });
         }
       } else { // File not found
         ServerLogger.error('File not found at path: ($pathToFile)');
@@ -422,12 +452,25 @@ class _HttpServerRequestHandler {
       }
     } catch(err) {
       ServerLogger.error(err);
-    } finally {
+
       httpRequest.response.close();
     }
   }
 }
 
+/**
+ * Replace String variable in an AngularJS style of {{...}} and using a Map to
+ * determine the values to replace with. By default, it will switch all variables
+ * without a conversion value to an empty String value (e.g. ""), or in Layman's
+ * terms, nothing.
+ *
+ *     // Returns with the variables replaced:
+ *     // --> "My name is Bobert Robertson."
+ *     applyVarModifiers('My name is {{firstName}} {{lastName}}.', {
+ *       "firstName": "Bobert",
+ *       "lastName": "Robertson"
+ *     });
+ */
 String applyVarModifiers(String fileContents, final Map<String, dynamic> varModifiers, {final bool clearUnusedVars: true}) {
   varModifiers.forEach((final String key, final dynamic value) {
     fileContents = fileContents.replaceAll('{{$key}}', '$value');
@@ -441,13 +484,18 @@ String applyVarModifiers(String fileContents, final Map<String, dynamic> varModi
   return fileContents;
 }
 
-/// Get the ContentType back based on the type of file path;
-/// e.g. hello_world.html -> ContentType("text", "html")
+/**
+ * Get the ContentType back based on the type of the file path.
+ *
+ *     // --> ContentType("application", "dart");
+ *     final ContentType contentType  =
+ *         getContentTypeForFilepathExtension('/dart/modules/unittest.dart');
+ */
 ContentType getContentTypeForFilepathExtension(final String filePath) {
   final String extension = new RegExp(r'\.\S+$').firstMatch(filePath).group(0);
 
-  if (_HttpServerRequestHandler._fileExtensions.containsKey(extension)) {
-    final List<String> _fileExtensionData = _HttpServerRequestHandler._fileExtensions[extension];
+  if (HttpServerRequestHandler._fileExtensions.containsKey(extension)) {
+    final List<String> _fileExtensionData = HttpServerRequestHandler._fileExtensions[extension];
 
     return new ContentType(_fileExtensionData[0], _fileExtensionData[1]);
   }
@@ -464,7 +512,10 @@ class _VirtualDirectoryFileData {
 }
 
 /**
- * Factory for creating UrlData holder with a dynamically generated ID.
+ * Factory for creating UrlData holder with a dynamically generated reference ID.
+ *
+ * This is most often used for telling the server what the navigation Url will
+ * be for a method to register at.
  */
 class UrlData {
   static int _pageIndex = 0;
@@ -478,13 +529,23 @@ class UrlData {
   const UrlData._internal(final int this.id, final String this.path);
 }
 
-class AuthCheckResults {
+class _AuthCheckResults {
   final bool didPass;
   final String username;
 
-  const AuthCheckResults(final bool this.didPass, [final String this.username = null]);
+  const _AuthCheckResults(final bool this.didPass, [final String this.username = null]);
 }
 
+/**
+ * A user:password base64 encoded auth data.
+ *
+ * The username parameter is solely for an alias to the specific
+ * [AuthUserData]. It does not need to be the same as the [encodedAuth]
+ * parameter's username, but most often will be.
+ *
+ * The [encodedAuth] parameter will be the "user:password" String after having
+ * been base64 encoded. These will be used for checking credentials on the server.
+ */
 class AuthUserData {
   final String username;
   final String encodedAuth;
@@ -495,11 +556,11 @@ class AuthUserData {
 /**
  * Path data for storing with the required auth data.
  */
-class PathDataWithAuth {
+class _PathDataWithAuth {
   final String urlPath;
   final List<AuthUserData> _authUsersList;
 
-  PathDataWithAuth(final String this.urlPath, final List<AuthUserData> authUsersList) : this._authUsersList = authUsersList;
+  _PathDataWithAuth(final String this.urlPath, final List<AuthUserData> authUsersList) : this._authUsersList = authUsersList;
 
   bool doCredentialsMatch(final String encodedAuth) {
     for (AuthUserData authUserData in this._authUsersList) {

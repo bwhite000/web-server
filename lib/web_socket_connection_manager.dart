@@ -1,4 +1,8 @@
-library WebServer.webSocketConnectionManager;
+/**
+ * An additional library for managing WebSocket connections that works
+ * very well with the WebServer library.
+ */
+library WebSocketConnectionManager;
 
 import "dart:io";
 import "dart:convert" show JSON;

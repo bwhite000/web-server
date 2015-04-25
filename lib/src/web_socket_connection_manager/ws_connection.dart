@@ -1,4 +1,4 @@
-part of WebServer.webSocketConnectionManager;
+part of WebSocketConnectionManager;
 
 class WebSocketConnection {
   final WebSocket webSocket;

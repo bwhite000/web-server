@@ -1,6 +1,20 @@
 WebServer
 =========
 
+v1.1.0 (4.25.2015)
+------------------
+* Renamed the WebServer.webServer library to just WebServer.
+* Renamed the WebServer.webSocketConnectionManager library to just WebSocketConnectionManager.
+* Added tons more docs, comments, and inline code examples; published Docs online using Jennex
+  as the host and placed the link in the Pubspec.
+* Implemented the URI Object to make relative file path resolution more accurate.
+* Possibly solved issue that appears on Windows when resolving relative paths in
+  serveVirtualDirectory() and serverStaticFile().
+* Added better honoring of the shouldBeVerbose parameter and changed to static property
+  [breaking API change].
+* UTF8 encoding was required for files to be read before, but now it will work with any
+  encoding and convert it to UTF8 during file read.
+
 v1.0.9 (4.16.2015)
 --------------------
 * Added a new example for creating virtual directories at "example/virtual_directory.dart".
@@ -13,6 +27,7 @@ v1.0.9 (4.16.2015)
   potential confusion for future developers using this Dart package; also added this to
   `serveStaticFile()`.
 * Improved some of the comments and code in the example files.
+* Added an option to switch off recursive indexing in `serveVirtualDirectory()`.
 
 v1.0.8 (4.15.2015)
 ------------------

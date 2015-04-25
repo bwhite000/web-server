@@ -1,4 +1,4 @@
-part of WebServer.webServer;
+part of WebServer;
 
 typedef String FunctionBinaryParam(Uint32List encodeMessage, HttpRequest httpRequest, WebSocket ws);
 

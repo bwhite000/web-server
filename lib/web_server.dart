@@ -1,8 +1,12 @@
-library WebServer.webServer;
+/**
+ * A powerful WebServer package to make getting reliable, strong servers
+ * running quickly with many features.
+ */
+library WebServer;
 
 import "dart:io";
 import "dart:async";
-import "dart:convert" show JSON;
+import "dart:convert" show JSON, UTF8, LineSplitter;
 import "dart:typed_data";
 import "package:event_listener/event_listener.dart";
 import "package:path/path.dart" as path;
@@ -13,13 +17,16 @@ part "src/web_server/http_server_request_handler.dart";
 part "src/web_server/web_socket_request_payload.dart";
 part "src/web_server/web_socket_server_request_handler.dart";
 
+/**
+ * The base class for all of the WebServer functionality.
+ */
 class WebServer {
   final InternetAddress address;
   final int port;
   final bool hasHttpServer;
   final bool hasWebSocketServer;
   final bool isSecure;
-  _HttpServerRequestHandler httpServerHandler;
+  HttpServerRequestHandler httpServerHandler;
   _WebSocketServerRequestHandler webSocketServerHandler;
   final List<String> allowedMethods;
   final Duration responseDeadline;
@@ -38,7 +45,7 @@ class WebServer {
     }
 
     if (this.hasHttpServer) {
-      this.httpServerHandler = new _HttpServerRequestHandler();
+      this.httpServerHandler = new HttpServerRequestHandler();
     }
 
     if (this.hasWebSocketServer) {

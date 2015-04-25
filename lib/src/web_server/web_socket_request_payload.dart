@@ -1,4 +1,4 @@
-part of WebServer.webServer;
+part of WebServer;
 
 class WebSocketRequestPayload {
   final int cmd;
