@@ -16,10 +16,13 @@ class _HttpServerRequestHandler {
     ".txt": const <String>["text", "plain"],
     ".png": const <String>["image", "png"],
     ".jpg": const <String>["image", "jpg"],
+    ".jpeg": const <String>["image", "jpeg"],
     ".gif": const <String>["image", "gif"],
     ".webp": const <String>["image", "webp"],
+    ".ico": const <String>["image", "ico"],
     ".svg": const <String>["image", "svg+xml"],
     ".otf": const <String>["font", "otf"],
+    ".eot": const <String>["font", "eot"],
     ".woff": const <String>["font", "woff"],
     ".woff2": const <String>["font", "woff2"],
     ".ttf": const <String>["font", "ttf"],
@@ -38,7 +41,8 @@ class _HttpServerRequestHandler {
     final String path = httpRequest.uri.path;
 
     // Is there basic auth needed for this path.
-    if (this._doesThisPathRequireAuth(path)) { // BasicAuth IS required
+    if (this._doesThisPathRequireAuth(path)) {
+      // BasicAuth IS required
       final PathDataWithAuth pathDataWithAuthForPath = this._getAcceptedCredentialsForPath(path);
       final AuthCheckResults authCheckResults = this._checkAuthFromRequest(httpRequest, pathDataWithAuthForPath);
 
@@ -50,11 +54,11 @@ class _HttpServerRequestHandler {
       }
 
       return;
-    } else { // BasicAuth is NOT required
+    } else {
+      // BasicAuth is NOT required
       // Check if the URL matches a registered file and that a URL ID is in the FunctionStore
       if (this._possibleFiles.containsKey(path) &&
-          this._functionStore.fnStore.containsKey(this._possibleFiles[path]))
-      {
+      this._functionStore.fnStore.containsKey(this._possibleFiles[path])) {
         ServerLogger.log('Url has matched to a file. Routing to it...');
 
         final int urlId = this._possibleFiles[path];
@@ -90,20 +94,20 @@ class _HttpServerRequestHandler {
 
           // Check if the URL matches a registered directory and that a URL ID is in the FunctionStore
           if (this._possibleDirectories.containsKey(possibleDirectoryPath) &&
-              this._functionStore.fnStore.containsKey(this._possibleDirectories[possibleDirectoryPath]))
-          {
+          this._functionStore.fnStore.containsKey(this._possibleDirectories[possibleDirectoryPath])) {
             ServerLogger.log('Url has matched to a directory. Routing to it...');
 
             final int urlId = this._possibleDirectories[possibleDirectoryPath];
 
             this._functionStore.runEvent(urlId, httpRequest);
-          } else { // Respond with 404 error because nothing was matched.
+          } else {
+            // Respond with 404 error because nothing was matched.
             ServerLogger.log('No registered url match found.');
 
             httpRequest.response
-                ..statusCode = HttpStatus.NOT_FOUND
-                ..headers.contentType = new ContentType("text", "plain", charset: "utf-8")
-                ..close();
+              ..statusCode = HttpStatus.NOT_FOUND
+              ..headers.contentType = new ContentType("text", "plain", charset: "utf-8")
+              ..close();
           }
         }
       }
@@ -184,24 +188,24 @@ class _HttpServerRequestHandler {
   /// Send an HTTP 401 Auth required response
   static void sendRequiredBasicAuthResponse(final HttpRequest httpRequest, final String errMessage) {
     httpRequest.response
-        ..statusCode = HttpStatus.UNAUTHORIZED
-        ..headers.add(HttpHeaders.WWW_AUTHENTICATE, 'Basic realm="Enter credentials"')
-        ..write(errMessage)
-        ..close();
+      ..statusCode = HttpStatus.UNAUTHORIZED
+      ..headers.add(HttpHeaders.WWW_AUTHENTICATE, 'Basic realm="Enter credentials"')
+      ..write(errMessage)
+      ..close();
   }
 
   static void sendPageNotFoundResponse(final HttpRequest httpRequest, final String errMessage) {
     httpRequest.response
-        ..statusCode = HttpStatus.NOT_FOUND
-        ..write('404 - Page not found')
-        ..close();
+      ..statusCode = HttpStatus.NOT_FOUND
+      ..write('404 - Page not found')
+      ..close();
   }
 
   static void sendInternalServerErrorResponse(final HttpRequest httpRequest, final String errMessage) {
     httpRequest.response
-        ..statusCode = HttpStatus.INTERNAL_SERVER_ERROR
-        ..write('500 - Internal Server Error')
-        ..close();
+      ..statusCode = HttpStatus.INTERNAL_SERVER_ERROR
+      ..write('500 - Internal Server Error')
+      ..close();
   }
 
   Stream<HttpRequest> registerDirectory(final UrlData urlData) {
@@ -223,8 +227,8 @@ class _HttpServerRequestHandler {
    * [isRelativeFilePath] (opt) - Is the [pathToFile] value a relative path? Default is true.
    */
   Future<Null> serveStaticFile(final UrlData urlData, String pathToFile, {
-    final bool enableCaching: true,
-    final bool isRelativeFilePath: true
+  final bool enableCaching: true,
+  final bool isRelativeFilePath: true
   }) async {
     if (isRelativeFilePath) {
       pathToFile = '${path.dirname(Platform.script.path)}/$pathToFile'.replaceAll('%20', ' ');
@@ -241,13 +245,16 @@ class _HttpServerRequestHandler {
       this._functionStore[urlData.id].listen((final HttpRequest httpRequest) async {
         String _localFileContents;
 
-        if (enableCaching == true) { // Use a cached file, or initialize the cached file, if enabled
-          if (_fileContents == null) { // If a version has not been cached before
+        if (enableCaching == true) {
+          // Use a cached file, or initialize the cached file, if enabled
+          if (_fileContents == null) {
+            // If a version has not been cached before
             _fileContents = await file.readAsString();
           }
 
           _localFileContents = _fileContents;
-        } else if (enableCaching == false) { // Read freshly, if caching is not enabled
+        } else if (enableCaching == false) {
+          // Read freshly, if caching is not enabled
           _localFileContents = await file.readAsString();
         }
 
@@ -256,8 +263,8 @@ class _HttpServerRequestHandler {
         }
 
         httpRequest.response
-            ..write(_localFileContents)
-            ..close();
+          ..write(_localFileContents)
+          ..close();
       });
     } else {
       ServerLogger.error('The file at path ($pathToFile) was not found in the filesystem; unable to serve it.');
@@ -272,8 +279,8 @@ class _HttpServerRequestHandler {
    * [enableCaching] - Should the file be cached in-memory; updates the cache when a newer copy is found.
    */
   static Future<Null> serveFileWithAuth(final String pathToFile, {
-    final Map<String, dynamic> varModifiers: const <String, dynamic>{},
-    final bool enableCaching: false
+  final Map<String, dynamic> varModifiers: const <String, dynamic>{},
+  final bool enableCaching: false
   }) async {
     final File file = new File(pathToFile);
 
@@ -293,11 +300,11 @@ class _HttpServerRequestHandler {
    * [shouldFollowLinks] - Should SymLinks be treated as they are in this directory and, therefore, served?
    */
   Future<Null> serveVirtualDirectory(String pathToDirectory, final List<String> supportedFileExtensions, {
-    final bool includeDirNameInPath: false,
-    final bool shouldFollowLinks: false,
-    final String prefixWithDirName: '',
-    final bool isRelativeDirPath: true,
-    final bool parseForFilesRecursively: true
+  final bool includeDirNameInPath: false,
+  final bool shouldFollowLinks: false,
+  final String prefixWithDirName: '',
+  final bool isRelativeDirPath: true,
+  final bool parseForFilesRecursively: true
   }) async {
     ServerLogger.log('_HttpServerRequestHandler.serveVirtualDirectory(String, List, {bool}) -> Future<Null>');
 
@@ -308,6 +315,9 @@ class _HttpServerRequestHandler {
 
     if (isRelativeDirPath) {
       pathToDirectory = '${path.dirname(Platform.script.path)}/$pathToDirectory'.replaceAll('%20', ' ');
+      if (Platform.operatingSystem == "windows") {
+        pathToDirectory = pathToDirectory.replaceFirst(new RegExp("/"), '');
+      }
     }
 
     // Get the directory for virtualizing
@@ -329,7 +339,7 @@ class _HttpServerRequestHandler {
                 (includeDirNameInPath) ? pathToDirectory.replaceFirst(matchThisDirNameAtEnd, '') : pathToDirectory,
                 prefixWithDirName + ((includeDirNameInPath) ? '/$thisDirName' : '') + entity.path.replaceFirst(matchPathToDirectoryAtStart, ''),
                 ((includeDirNameInPath) ? '/$thisDirName' : '') + entity.path.replaceFirst(matchPathToDirectoryAtStart, '')
-              );
+            );
 
             if (shouldBeVerbose) {
               ServerLogger.log('Adding virtual file: ' + _virtualFileData.directoryPath + _virtualFileData.virtualFilePath + ' at Url: ' + _virtualFileData.virtualFilePath);
@@ -346,7 +356,8 @@ class _HttpServerRequestHandler {
     }
   }
 
-  static void serveVirtualDirectoryWithAuth() {}
+  static void serveVirtualDirectoryWithAuth() {
+  }
 
   /**
    * Serve the file with zero processing done to it.
@@ -364,16 +375,15 @@ class _HttpServerRequestHandler {
 
         // If the file needs to be read as bytes
         if (fileExtension == '.png' ||
-            fileExtension == '.jpg' ||
-            fileExtension == '.gif' ||
-            fileExtension == '.webp' ||
-            fileExtension == '.otf' ||
-            fileExtension == '.woff' ||
-            fileExtension == '.woff2' ||
-            fileExtension == '.ttf' ||
-            fileExtension == '.rar' ||
-            fileExtension == '.zip')
-        {
+        fileExtension == '.jpg' ||
+        fileExtension == '.gif' ||
+        fileExtension == '.webp' ||
+        fileExtension == '.otf' ||
+        fileExtension == '.woff' ||
+        fileExtension == '.woff2' ||
+        fileExtension == '.ttf' ||
+        fileExtension == '.rar' ||
+        fileExtension == '.zip') {
           contentsOfFile = await standardFile.readAsBytes();
 
           // Determine the content type to send
@@ -388,11 +398,10 @@ class _HttpServerRequestHandler {
           // Do the bytes need to be converted back to characters?
           // (not sure if this is necessary, but readAsString() would otherwise fail for these types - probably charset?)
           if (fileExtension == '.otf' ||
-              fileExtension == '.woff' ||
-              fileExtension == '.woff2' ||
-              fileExtension == '.ttf' ||
-              fileExtension == '.zip')
-          {
+          fileExtension == '.woff' ||
+          fileExtension == '.woff2' ||
+          fileExtension == '.ttf' ||
+          fileExtension == '.zip') {
             httpRequest.response.write(new String.fromCharCodes(contentsOfFile));
           } else {
             httpRequest.response.write(contentsOfFile);
@@ -411,16 +420,17 @@ class _HttpServerRequestHandler {
 
           httpRequest.response.write(contentsOfFile);
         }
-      } else { // File not found
+      } else {
+        // File not found
         ServerLogger.error('File not found at path: ($pathToFile)');
 
         httpRequest.response
-            ..statusCode = HttpStatus.NOT_FOUND
-            ..headers.contentType = new ContentType("text", "plain", charset: "utf-8")
-            ..write(r'404 - Page not found')
-            ..close();
+          ..statusCode = HttpStatus.NOT_FOUND
+          ..headers.contentType = new ContentType("text", "plain", charset: "utf-8")
+          ..write(r'404 - Page not found')
+          ..close();
       }
-    } catch(err) {
+    } catch (err) {
       ServerLogger.error(err);
     } finally {
       httpRequest.response.close();
