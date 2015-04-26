@@ -1,6 +1,18 @@
 WebServer
 =========
 
+v1.1.1 (4.26.2015)
+-----------------
+* Removing the default UTF-8 charset requirement in the response header to allow for different
+  file encodings; will re-add the charset soon when encoding detection (appears to be difficult
+  at the moment) is implemented.
+* Handling for non-UTF8 file encoding by piping the file bytes directly into the response without
+  passing through a string decoder first; last release, I understood this differently and the
+  behavior was not what I wanted it to behave as; stinkin' byte encoding detection.
+* Will re-add the byte encoding to the content-type header soon; I really don't like leaving this
+  out in requests, but don't want to prevent clients from serving non-UTF8 files until this can
+  be determined.
+
 v1.1.0 (4.25.2015)
 ------------------
 * Renamed the WebServer.webServer library to just WebServer.

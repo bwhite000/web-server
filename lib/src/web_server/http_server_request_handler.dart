@@ -428,18 +428,14 @@ class HttpServerRequestHandler {
           if (HttpServerRequestHandler._fileExtensions.containsKey(fileExtension)) {
             final List<String> _mimeTypePieces = HttpServerRequestHandler._fileExtensions[path.extension(standardFile.path)];
 
-            httpRequest.response.headers.contentType = new ContentType(_mimeTypePieces[0], _mimeTypePieces[1], charset: "utf-8");
+            httpRequest.response.headers.contentType = new ContentType(_mimeTypePieces[0], _mimeTypePieces[1]);
           } else {
-            httpRequest.response.headers.contentType = new ContentType("text", "plain", charset: "utf-8");
+            httpRequest.response.headers.contentType = new ContentType("text", "plain");
           }
 
-          // Read the file, and regardless of encoding, convert it to UTF-8
-          // and send it to the client
-          standardFile.openRead().transform(UTF8.decoder).listen((final String data) {
-            httpRequest.response.write(data);
-          }, onDone: () {
-            httpRequest.response.close();
-          });
+          // Read the file and send it to the client
+          await standardFile.openRead().pipe(httpRequest.response);
+          httpRequest.response.close();
         }
       } else { // File not found
         ServerLogger.error('File not found at path: ($pathToFile)');
