@@ -23,3 +23,8 @@ localWebServer.httpServerHandler
     // directory matching the accepted file types.
     .serveVirtualDirectory('web', const <String>['html', 'css', 'dart', 'js']);
 ~~~
+
+Features and bugs
+-----------------
+
+Please file feature requests and bugs using the GitHub issue tracker for this repository.
