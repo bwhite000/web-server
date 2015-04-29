@@ -1,5 +1,9 @@
-WebServer
-=========
+WebServer Changelog
+===================
+
+v1.1.2 (_._.2015)
+-----------------
+* Removed a single inefficient .runtimeType use.
 
 v1.1.1 (4.26.2015)
 -----------------
