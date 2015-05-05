@@ -19,7 +19,7 @@ void main() {
       ..registerDirectory(new UrlData('/img/profile_pics/80/')).listen((final HttpRequest httpRequest) { /*...*/ })
 
       // Automatically parse for indexing and serve all recursive items in this directory matching the accepted file extensions.
-      ..serveVirtualDirectory('web', const <String>['html', 'css', 'dart', 'js'])
+      ..serveVirtualDirectory('lib/web', const <String>['html', 'css', 'dart', 'js'])
 
       // Automatically handle serving this file at navigation to '/static_page', with optional in-memory caching
       ..serveStaticFile(new UrlData('/static_page'), 'web/static_page.html', enableCaching: false)

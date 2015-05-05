@@ -1,9 +1,28 @@
 WebServer Changelog
 ===================
 
-v1.1.2 (_._.2015)
+v1.1.2 (5.5.2015)
 -----------------
 * Removed a single inefficient .runtimeType use.
+* Changed a mimetype definition and added more.
+* Images and some binary sources were loading incorrectly, so switching to directly piping the
+  file contents into the HttpResponse, instead of reading, then adding.
+* Fixed issue with the file extension not matching in serveVirtualDirectory if the extension
+  was not all lowercase.
+* Solved issue with file and directory path building that would assemble incorrectly on Windows
+  machines.
+* Changed the serveVirtualDirectory() parameter for "includeDirNameInPath" to
+  "includeContainerDirNameInPath" for parameter meaning clarity.
+* Fixed a broken try/catch when loading a virtual file for a request.
+* Made _VirtualDirectoryFileData easier to use by adding getters with clearer meaning such as
+  .absoluteFileSystemPath and .httpRequestPath.
+* Greatly improved the efficiency of serveStandardFile for certain binary file formats and nicely
+  improved speed and memory for all binary file formats.
+* Removed UTF-8 from being the default charset for non-matched mimetypes in binary files.
+* Removed diffent handling in serveStandardFile based on the mimetype and now all use the same
+  piping to the HttpResponse.
+* Included another log into shouldBeVerbose guide.
+* Nicely clarified some confusing parts of the code.
 
 v1.1.1 (4.26.2015)
 -----------------

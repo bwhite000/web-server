@@ -21,9 +21,10 @@ class HttpServerRequestHandler {
     ".dart": const <String>["application", "dart"],
     ".txt": const <String>["text", "plain"],
     ".png": const <String>["image", "png"],
-    ".jpg": const <String>["image", "jpg"],
-    ".jpeg": const <String>["image", "jpg"],
+    ".jpg": const <String>["image", "jpeg"],
+    ".jpeg": const <String>["image", "jpeg"],
     ".gif": const <String>["image", "gif"],
+    ".ico": const <String>["image", "x-icon"],
     ".webp": const <String>["image", "webp"],
     ".svg": const <String>["image", "svg+xml"],
     ".otf": const <String>["font", "otf"],
@@ -74,14 +75,11 @@ class HttpServerRequestHandler {
 
         for (_VirtualDirectoryFileData virtualFilePathData in this._virtualDirectoryFiles) {
           // If the requested path matches a virtual path
-          if (httpRequest.uri.path == virtualFilePathData.virtualFilePathWithPrefix) {
+          if (httpRequest.uri.path == virtualFilePathData.httpRequestPath) {
             wasVirtualFileMatched = true;
-            try {
-              // Serve the matched virtual file
-              HttpServerRequestHandler._serveStandardFile('${virtualFilePathData.directoryPath}${virtualFilePathData.virtualFilePath}', httpRequest);
-            } catch (err) {
-              ServerLogger.error(err);
-            }
+
+            // Serve the matched virtual file
+            HttpServerRequestHandler._serveStandardFile('${virtualFilePathData.containerDirectoryPath}${virtualFilePathData.filePathFromContainerDirectory}', httpRequest).catchError(ServerLogger.error);
 
             break;
           }
@@ -303,16 +301,16 @@ class HttpServerRequestHandler {
    *
    * [pathToDirectory] - The path to this directory to server files recursively from.
    * [supportedFileExtensions] - A list of file extensions (without the "." before the extension name) that are allowed to be served from this directory.
-   * [includeDirNameInPath] - Should the folder being served also have it's name in the browser navigation path; such as serving a 'js/' folder while retaining 'js/' in the browser Url; default is false.
+   * [includeContainerDirNameInPath] - Should the folder being served also have it's name in the browser navigation path; such as serving a 'js/' folder while retaining 'js/' in the browser Url; default is false.
    * [shouldFollowLinks] - Should SymLinks be treated as they are in this directory and, therefore, served?
    *
    *     new WebServer().serveVirtualDirectory('web/js', ['.js'],
    *       parseForFilesRecursively: false);
    */
   Future<Null> serveVirtualDirectory(String pathToDirectory, final List<String> supportedFileExtensions, {
-    final bool includeDirNameInPath: false,
+    final bool includeContainerDirNameInPath: false,
     final bool shouldFollowLinks: false,
-    final String prefixWithDirName: '',
+    final String prefixWithPseudoDirName: '',
     final bool isRelativeDirPath: true,
     final bool parseForFilesRecursively: true
   }) async {
@@ -336,9 +334,6 @@ class HttpServerRequestHandler {
 
     // Get the directory for virtualizing
     final Directory dir = new Directory(pathToDirectory);
-    final String thisDirName = path.basename(pathToDirectory);
-    final RegExp matchThisDirNameAtEnd = new RegExp('/' + thisDirName + r'$');
-    final RegExp matchPathToDirectoryAtStart = new RegExp(r'^' + pathToDirectory);
 
     // If the directory exists
     if (await dir.exists()) {
@@ -348,15 +343,29 @@ class HttpServerRequestHandler {
 
         for (String supportedFileExtension in supportedFileExtensions) {
           // If this is a file AND ends with a supported file extension
-          if (fileStat.type == FileSystemEntityType.FILE && entity.path.endsWith('.$supportedFileExtension')) {
+          if (fileStat.type == FileSystemEntityType.FILE && entity.path.toLowerCase().endsWith('.$supportedFileExtension')) {
+            final String _containerDirectoryPath = pathToDirectory;
+            final String _filePathFromContainerDirectory = entity.path.replaceFirst(_containerDirectoryPath, '');
+            String _optPrefix = (includeContainerDirNameInPath) ? path.basename(_containerDirectoryPath) : '';
+
+            if (prefixWithPseudoDirName is String &&
+                prefixWithPseudoDirName.isNotEmpty)
+            {
+              if (_optPrefix.isNotEmpty) {
+                _optPrefix = prefixWithPseudoDirName + '/' + _optPrefix; // 'psuedoPrefix' + '/' + 'web';
+              } else {
+                _optPrefix = prefixWithPseudoDirName; // 'pseudoPrefix';
+              }
+            }
+
             final _VirtualDirectoryFileData _virtualFileData = new _VirtualDirectoryFileData(
-                (includeDirNameInPath) ? pathToDirectory.replaceFirst(matchThisDirNameAtEnd, '') : pathToDirectory,
-                prefixWithDirName + ((includeDirNameInPath) ? '/$thisDirName' : '') + entity.path.replaceFirst(matchPathToDirectoryAtStart, ''),
-                ((includeDirNameInPath) ? '/$thisDirName' : '') + entity.path.replaceFirst(matchPathToDirectoryAtStart, '')
+                _containerDirectoryPath,
+                _filePathFromContainerDirectory,
+                _optPrefix
               );
 
             if (shouldBeVerbose) {
-              ServerLogger.log('Adding virtual file: ' + _virtualFileData.directoryPath + _virtualFileData.virtualFilePath + ' at Url: ' + _virtualFileData.virtualFilePath);
+              ServerLogger.log('Adding virtual file: ' + _virtualFileData.absoluteFileSystemPath + ' at Url: ' + _virtualFileData.httpRequestPath);
             }
 
             this._virtualDirectoryFiles.add(_virtualFileData);
@@ -384,71 +393,26 @@ class HttpServerRequestHandler {
       // Does the file exist?
       if (await standardFile.exists()) {
         final String fileExtension = path.extension(standardFile.path);
-        dynamic contentsOfFile;
 
-        // If the file needs to be read as bytes
-        if (fileExtension == '.png' ||
-            fileExtension == '.jpg' ||
-            fileExtension == '.gif' ||
-            fileExtension == '.webp' ||
-            fileExtension == '.otf' ||
-            fileExtension == '.woff' ||
-            fileExtension == '.woff2' ||
-            fileExtension == '.ttf' ||
-            fileExtension == '.rar' ||
-            fileExtension == '.zip')
-        {
-          contentsOfFile = await standardFile.readAsBytes();
+        // Determine the content-type to send, if possible
+        if (HttpServerRequestHandler._fileExtensions.containsKey(fileExtension)) {
+          final List<String> _mimeTypePieces = HttpServerRequestHandler._fileExtensions[path.extension(standardFile.path)];
 
-          // Determine the content type to send
-          if (HttpServerRequestHandler._fileExtensions.containsKey(fileExtension)) {
-            final List<String> _mimeTypePieces = HttpServerRequestHandler._fileExtensions[path.extension(standardFile.path)];
-
-            httpRequest.response.headers.contentType = new ContentType(_mimeTypePieces[0], _mimeTypePieces[1]);
-          } else {
-            httpRequest.response.headers.contentType = new ContentType("text", "plain", charset: "utf-8");
-          }
-
-          // Do the bytes need to be converted back to characters?
-          // (not sure if this is necessary, but readAsString() would otherwise fail for these types - probably charset?)
-          if (fileExtension == '.otf' ||
-              fileExtension == '.woff' ||
-              fileExtension == '.woff2' ||
-              fileExtension == '.ttf' ||
-              fileExtension == '.zip')
-          {
-            httpRequest.response.write(new String.fromCharCodes(contentsOfFile));
-          } else {
-            httpRequest.response.write(contentsOfFile);
-          }
-
-          httpRequest.response.close();
-        } else {
-          // Determine the content type to send
-          if (HttpServerRequestHandler._fileExtensions.containsKey(fileExtension)) {
-            final List<String> _mimeTypePieces = HttpServerRequestHandler._fileExtensions[path.extension(standardFile.path)];
-
-            httpRequest.response.headers.contentType = new ContentType(_mimeTypePieces[0], _mimeTypePieces[1]);
-          } else {
-            httpRequest.response.headers.contentType = new ContentType("text", "plain");
-          }
-
-          // Read the file and send it to the client
-          await standardFile.openRead().pipe(httpRequest.response);
-          httpRequest.response.close();
+          httpRequest.response.headers.contentType = new ContentType(_mimeTypePieces[0], _mimeTypePieces[1]);
         }
+
+        // Read the file, and send it to the client
+        await standardFile.openRead().pipe(httpRequest.response);
       } else { // File not found
-        ServerLogger.error('File not found at path: ($pathToFile)');
+        if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.error('File not found at path: ($pathToFile)');
 
         httpRequest.response
             ..statusCode = HttpStatus.NOT_FOUND
-            ..headers.contentType = new ContentType("text", "plain", charset: "utf-8")
-            ..write(r'404 - Page not found')
-            ..close();
+            ..headers.contentType = new ContentType("text", "plain", charset: "utf-8");
       }
     } catch(err) {
       ServerLogger.error(err);
-
+    } finally {
       httpRequest.response.close();
     }
   }
@@ -500,11 +464,26 @@ ContentType getContentTypeForFilepathExtension(final String filePath) {
 }
 
 class _VirtualDirectoryFileData {
-  final String directoryPath;
-  final String virtualFilePathWithPrefix;
-  final String virtualFilePath;
+  final String containerDirectoryPath;
+  final String filePathFromContainerDirectory;
+  final String optPrefix;
 
-  _VirtualDirectoryFileData(final String this.directoryPath, final String this.virtualFilePathWithPrefix, final String this.virtualFilePath);
+  _VirtualDirectoryFileData(final String this.containerDirectoryPath, final String this.filePathFromContainerDirectory, [final String this.optPrefix = '']);
+
+  String get absoluteFileSystemPath {
+    return this.containerDirectoryPath + this.filePathFromContainerDirectory;
+  }
+
+  String get httpRequestPath {
+    if (this.optPrefix is String &&
+        this.optPrefix.isNotEmpty)
+    {
+      // The this.filePathFromContainerDirectory has a leading "/", add one if there is an optional prefix
+      return "/${this.optPrefix}${this.filePathFromContainerDirectory}";
+    }
+
+    return this.filePathFromContainerDirectory;
+  }
 }
 
 /**
