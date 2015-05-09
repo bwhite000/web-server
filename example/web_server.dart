@@ -24,6 +24,9 @@ void main() {
       // Automatically handle serving this file at navigation to '/static_page', with optional in-memory caching
       ..serveStaticFile(new UrlData('/static_page'), 'web/static_page.html', enableCaching: false)
 
+      // Gain handling of all API requests, for example; catches all paths starting with the String in UrlData
+      ..handleRequestsStartingWith(new UrlData('/api/')).listen((final HttpRequest httpRequest) {/*...*/})
+
       // Handle requiring Basic Authentication on the specified Url, allowing only the users in the authentication list.
       // The required credentials are "user:password" (from the BasicAuth base64 encoded -> 'dXNlcjpwYXNzd29yZA==')
       ..registerPathWithBasicAuth(new UrlData('/api/auth/required/dateTime'), const <AuthUserData>[

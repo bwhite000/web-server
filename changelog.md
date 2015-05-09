@@ -1,6 +1,12 @@
 WebServer Changelog
 ===================
 
+v1.1.3 (_._.2015)
+-----------------
+* Added a handleRequestsStartingWith() method for intercepting requests starting with a specified
+  string; this is useful for handling everything in API patterns such as starting with '/api/';
+  added an example to the examples folder in "example/web_server.dart".
+
 v1.1.2 (5.5.2015)
 -----------------
 * Removed a single inefficient .runtimeType use.

@@ -10,6 +10,7 @@ class HttpServerRequestHandler {
   final Map<String, int> _possibleDirectories = <String, int>{};
   final List<_VirtualDirectoryFileData> _virtualDirectoryFiles = <_VirtualDirectoryFileData>[];
   final List<_PathDataWithAuth> _pathDataForAuthList = <_PathDataWithAuth>[];
+  final List<UrlData> _urlPathStartString = <UrlData>[];
 
   /// The message text that will be returned in the response when a BasicAuth request fails.
   final String strForUnauthorizedError = '401 - Unauthorized';
@@ -61,6 +62,14 @@ class HttpServerRequestHandler {
 
       return;
     } else { // BasicAuth is NOT required
+      // Is this a 'startsWith' registered path?
+      for (UrlData _urlData in this._urlPathStartString) {
+        if (path.startsWith(_urlData.path)) {
+          this._functionStore.runEvent(_urlData.id, httpRequest);
+          return;
+        }
+      }
+
       // Check if the URL matches a registered file and that a URL ID is in the FunctionStore
       if (this._possibleFiles.containsKey(path) &&
           this._functionStore.fnStore.containsKey(this._possibleFiles[path]))
@@ -379,7 +388,22 @@ class HttpServerRequestHandler {
     }
   }
 
-  /*static void serveVirtualDirectoryWithAuth() {}*/
+  /**
+   * All HTTP requests starting the the specified [UrlData] path String parameter will be
+   * forwarded to the attached event listener.
+   *
+   * This is a useful method for catching all API prefixed path requests and handling them
+   * in your own style:
+   *
+   *     .handleRequestsStartingWith(new UrlData('/api/')).listen(apiRouter);
+   */
+  Stream<HttpRequest> handleRequestsStartingWith(final UrlData urlPathStartData) {
+    this._urlPathStartString.add(urlPathStartData);
+
+    return this._functionStore[urlPathStartData.id];
+  }
+
+  /*void serveVirtualDirectoryWithAuth() {}*/
 
   /**
    * Serve the file with zero processing done to it.
