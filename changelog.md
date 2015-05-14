@@ -1,6 +1,13 @@
 WebServer Changelog
 ===================
 
+v1.1.4 (5.14.2015)
+------------------
+* Found that HttpRequest paths were not matching serveVirtualDirectory() generated paths on
+  Windows machines because the Url would be something like: '/main.dart' and Windows would
+  provide and store a path segment with the opposite separator at '\main.dart' resulting in
+  the String comparison to fail; this has been resolved.
+
 v1.1.3 (5.9.2015)
 -----------------
 * Added a handleRequestsStartingWith() method for intercepting requests starting with a specified

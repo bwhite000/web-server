@@ -84,7 +84,7 @@ class HttpServerRequestHandler {
 
         for (_VirtualDirectoryFileData virtualFilePathData in this._virtualDirectoryFiles) {
           // If the requested path matches a virtual path
-          if (httpRequest.uri.path == virtualFilePathData.httpRequestPath) {
+          if (path == virtualFilePathData.httpRequestPath) {
             wasVirtualFileMatched = true;
 
             // Serve the matched virtual file
@@ -357,7 +357,7 @@ class HttpServerRequestHandler {
             final String _filePathFromContainerDirectory = entity.path.replaceFirst(_containerDirectoryPath, '');
             String _optPrefix = (includeContainerDirNameInPath) ? path.basename(_containerDirectoryPath) : '';
 
-            if (prefixWithPseudoDirName is String &&
+            if (prefixWithPseudoDirName != null &&
                 prefixWithPseudoDirName.isNotEmpty)
             {
               if (_optPrefix.isNotEmpty) {
@@ -488,25 +488,32 @@ ContentType getContentTypeForFilepathExtension(final String filePath) {
 }
 
 class _VirtualDirectoryFileData {
-  final String containerDirectoryPath;
-  final String filePathFromContainerDirectory;
-  final String optPrefix;
+  final String containerDirectoryPath; // e.g. "/Users/Test/home/server_project/web"
+  final String filePathFromContainerDirectory; // e.g. "dart/index_page/main.dart"
+  String _slashSafeFilePathFromContainerDirectoryForHttpRequests; // e.g. the [filePathFromContainerDirectory] with '\' converted to '/' for Url path matching (Windows quirk)
+  final String _optPrefix; // Optional prefix before the file path in the public Url path
 
-  _VirtualDirectoryFileData(final String this.containerDirectoryPath, final String this.filePathFromContainerDirectory, [final String this.optPrefix = '']);
+  _VirtualDirectoryFileData(final String this.containerDirectoryPath, final String this.filePathFromContainerDirectory, [final String this._optPrefix = '']) {
+    if (path.separator == '\\' && this.filePathFromContainerDirectory.startsWith(path.separator)) {
+      this._slashSafeFilePathFromContainerDirectoryForHttpRequests = this.filePathFromContainerDirectory.replaceAll(path.separator, '/');
+    } else {
+      this._slashSafeFilePathFromContainerDirectoryForHttpRequests = this.filePathFromContainerDirectory;
+    }
+  }
 
   String get absoluteFileSystemPath {
     return this.containerDirectoryPath + this.filePathFromContainerDirectory;
   }
 
   String get httpRequestPath {
-    if (this.optPrefix is String &&
-        this.optPrefix.isNotEmpty)
+    if (this._optPrefix != null &&
+        this._optPrefix.isNotEmpty)
     {
-      // The this.filePathFromContainerDirectory has a leading "/", add one if there is an optional prefix
-      return "/${this.optPrefix}${this.filePathFromContainerDirectory}";
+      // The this.filePathFromContainerDirectory has a leading "/", add another one if there is an optional prefix
+      return "/${this._optPrefix}${this._slashSafeFilePathFromContainerDirectoryForHttpRequests}";
     }
 
-    return this.filePathFromContainerDirectory;
+    return this._slashSafeFilePathFromContainerDirectoryForHttpRequests;
   }
 }
 
