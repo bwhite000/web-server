@@ -1,16 +1,20 @@
 name: web_server
-version: 1.1.4
+version: 2.0.0
 author: Brandon White <jennexproject+webserver@gmail.com>
 description: An efficient server library for quickly creating a WebServer and handling HTTP requests, WebSocket connections, and API requests.
-homepage: https://google.com/+BrandonWhite
+homepage: https://github.com/bwhite000/web-server
 environment:
   sdk: '>=1.9.0 <2.0.0'
 documentation: http://jennex.it/github/bwhite000/web-server/docs/
 dependencies:
+  cache:
+    git: https://github.com/bwhite000/cache.git
   event_listener:
     git: https://github.com/bwhite000/event-listener.git
     version: '>=0.0.0 <0.1.0'
   path: '>=1.0.0 <2.0.0'
   server_logger:
     git: https://github.com/bwhite000/server-logger.git
-    version: '>=0.1.0 <0.2.0'
+    version: '>=0.1.0 <2.0.0'
+executables:
+  web_server:

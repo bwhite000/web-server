@@ -1,5 +1,7 @@
 part of WebServer;
 
+typedef ErrorPageListenerFn(HttpRequest httpRequest);
+
 /**
  * This is part of the WebServer object used for setting up HttpRequest
  * handlers.
@@ -10,51 +12,78 @@ class HttpServerRequestHandler {
   final Map<String, int> _possibleDirectories = <String, int>{};
   final List<_VirtualDirectoryFileData> _virtualDirectoryFiles = <_VirtualDirectoryFileData>[];
   final List<_PathDataWithAuth> _pathDataForAuthList = <_PathDataWithAuth>[];
-  final List<UrlData> _urlPathStartString = <UrlData>[];
+  final List<UrlPath> _urlPathStartString = <UrlPath>[];
 
   /// The message text that will be returned in the response when a BasicAuth request fails.
   final String strForUnauthorizedError = '401 - Unauthorized';
 
-  static const Map<String, List<String>> _fileExtensions = const <String, List<String>>{
-    ".html": const <String>["text", "html"],
-    ".css": const <String>["text", "css"],
-    ".js": const <String>["text", "javascript"],
-    ".dart": const <String>["application", "dart"],
-    ".txt": const <String>["text", "plain"],
-    ".png": const <String>["image", "png"],
-    ".jpg": const <String>["image", "jpeg"],
-    ".jpeg": const <String>["image", "jpeg"],
-    ".gif": const <String>["image", "gif"],
-    ".ico": const <String>["image", "x-icon"],
-    ".webp": const <String>["image", "webp"],
-    ".svg": const <String>["image", "svg+xml"],
-    ".otf": const <String>["font", "otf"],
-    ".woff": const <String>["font", "woff"],
-    ".woff2": const <String>["font", "woff2"],
-    ".ttf": const <String>["font", "ttf"],
-    ".rar": const <String>["application", "x-rar-compressed"],
-    ".zip": const <String>["application", "zip"]
+  static Map<String, ContentType> _fileExtensions = <String, ContentType>{
+    ".html": new ContentType("text", "html"),
+    ".css": new ContentType("text", "css"),
+    ".js": new ContentType("text", "javascript"),
+    ".dart": new ContentType("application", "dart"),
+    ".txt": new ContentType("text", "plain"),
+    ".png": new ContentType("image", "png"),
+    ".jpg": new ContentType("image", "jpeg"),
+    ".jpeg": new ContentType("image", "jpeg"),
+    ".gif": new ContentType("image", "gif"),
+    ".ico": new ContentType("image", "x-icon"),
+    ".webp": new ContentType("image", "webp"),
+    ".mp3": new ContentType("audio", "mpeg3"),
+    ".oga": new ContentType("audio", "ogg"),
+    ".ogv": new ContentType("video", "ogg"),
+    ".ogg": new ContentType("application", "ogg"),
+    ".svg": new ContentType("image", "svg+xml"),
+    ".otf": new ContentType("font", "otf"),
+    ".woff": new ContentType("font", "woff"),
+    ".woff2": new ContentType("font", "woff2"),
+    ".ttf": new ContentType("font", "ttf"),
+    ".rar": new ContentType("application", "x-rar-compressed"),
+    ".zip": new ContentType("application", "zip")
   };
   static bool shouldBeVerbose = false;
+  // The int is the HttpStatus
+  final Map<int, ErrorPageListenerFn> _errorCodeListenerFns = <int, ErrorPageListenerFn>{};
 
   HttpServerRequestHandler();
 
+  // Getter
+  void onErrorDocument(final int httpStatus, ErrorPageListenerFn errorPageListenerFn) {
+    this._errorCodeListenerFns[httpStatus] = errorPageListenerFn;
+  }
+
+  void _callListenerForErrorDocument(final int httpStatus, final HttpRequest httpRequest) {
+    if (this._errorCodeListenerFns.containsKey(httpStatus)) {
+      // Set the default status code, but the developer is welcome to override it in their error handler function
+      httpRequest.response.statusCode = httpStatus;
+
+      this._errorCodeListenerFns[httpStatus](httpRequest);
+    } else { // Default handler
+      httpRequest.response
+          ..statusCode = httpStatus
+          ..headers.contentType = new ContentType('text', 'plain', charset: 'utf-8')
+          ..write('$httpStatus Error')
+          ..close();
+    }
+  }
+
   // Util
-  void _onHttpRequest(final HttpRequest httpRequest) {
+  Future<Null> _onHttpRequest(final HttpRequest httpRequest) async {
     if (HttpServerRequestHandler.shouldBeVerbose) {
       ServerLogger.log('_HttpServerRequestHandler.onRequest()');
       ServerLogger.log('Requested Url: ${httpRequest.uri.path}');
     }
 
-    final String path = httpRequest.uri.path;
+    final String requestPath = httpRequest.uri.path;
 
     // Is there basic auth needed for this path.
-    if (this._doesThisPathRequireAuth(path)) { // BasicAuth IS required
-      final _PathDataWithAuth pathDataWithAuthForPath = this._getAcceptedCredentialsForPath(path);
+    if (this._doesThisPathRequireAuth(requestPath)) { // BasicAuth IS required
+      final _PathDataWithAuth pathDataWithAuthForPath = this._getAcceptedCredentialsForPath(requestPath);
       final _AuthCheckResults authCheckResults = this._checkAuthFromRequest(httpRequest, pathDataWithAuthForPath);
 
       if (authCheckResults.didPass) {
-        final int urlId = this._possibleFiles[path];
+        final int urlId = this._possibleFiles[requestPath];
+
         this._functionStore.runEvent(urlId, httpRequest);
       } else {
         HttpServerRequestHandler.sendRequiredBasicAuthResponse(httpRequest, this.strForUnauthorizedError);
@@ -63,32 +92,60 @@ class HttpServerRequestHandler {
       return;
     } else { // BasicAuth is NOT required
       // Is this a 'startsWith' registered path?
-      for (UrlData _urlData in this._urlPathStartString) {
-        if (path.startsWith(_urlData.path)) {
+      for (UrlPath _urlData in this._urlPathStartString) {
+        if (requestPath.startsWith(_urlData.path)) {
           this._functionStore.runEvent(_urlData.id, httpRequest);
+
           return;
         }
       }
 
       // Check if the URL matches a registered file and that a URL ID is in the FunctionStore
-      if (this._possibleFiles.containsKey(path) &&
-          this._functionStore.fnStore.containsKey(this._possibleFiles[path]))
+      // NOTE: This format is being deprecated in favor of using the RequestPath Object.
+      if (this._possibleFiles.containsKey(requestPath) &&
+          this._functionStore.fnStore.containsKey(this._possibleFiles[requestPath]))
       {
         if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('Url has matched to a file. Routing to it...');
 
-        final int urlId = this._possibleFiles[path];
+        final int urlId = this._possibleFiles[requestPath];
 
         this._functionStore.runEvent(urlId, httpRequest);
+      } else if (RequestPath._possibleUrlDataFormats.containsKey(requestPath) &&
+          RequestPath._functionStore.fnStore.containsKey(RequestPath._possibleUrlDataFormats[requestPath]))
+      {
+        if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('Url has matched to a file in RequestPath Object. Routing to it...');
+
+        final int urlId = RequestPath._possibleUrlDataFormats[requestPath];
+
+        RequestPath._functionStore.runEvent(urlId, httpRequest);
       } else {
         bool wasVirtualFileMatched = false;
 
+        // Look for the request path in the registered virtual file list
         for (_VirtualDirectoryFileData virtualFilePathData in this._virtualDirectoryFiles) {
           // If the requested path matches a virtual path
-          if (path == virtualFilePathData.httpRequestPath) {
+          if (requestPath == virtualFilePathData.httpRequestPath) {
             wasVirtualFileMatched = true;
 
-            // Serve the matched virtual file
-            HttpServerRequestHandler._serveStandardFile('${virtualFilePathData.containerDirectoryPath}${virtualFilePathData.filePathFromContainerDirectory}', httpRequest).catchError(ServerLogger.error);
+            final String fileContents = await Cache.matchFile(new Uri.file(virtualFilePathData.absoluteFileSystemPath));
+
+            // If the fileContents are not empty, then the file must be present in the Cache;
+            // otherwise, read the file and serve it as a standard served file.
+            if (fileContents != null) {
+              final String extension = path.extension(virtualFilePathData.absoluteFileSystemPath);
+
+              // Check if the file extension matches a registered one, then add the Http response header for it, if it matches.
+              if (HttpServerRequestHandler._fileExtensions.containsKey(extension)) {
+                httpRequest.response.headers.contentType = HttpServerRequestHandler._fileExtensions[extension];
+              }
+
+              httpRequest.response
+                  ..write(fileContents)
+                  ..close();
+            } else {
+              // Serve the matched virtual file
+              this._serveStandardFile('${virtualFilePathData.containerDirectoryPath}${virtualFilePathData.filePathFromContainerDirectory}', httpRequest).catchError(ServerLogger.error);
+            }
 
             break;
           }
@@ -116,10 +173,7 @@ class HttpServerRequestHandler {
           } else { // Respond with 404 error because nothing was matched.
             if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('No registered url match found.');
 
-            httpRequest.response
-                ..statusCode = HttpStatus.NOT_FOUND
-                ..headers.contentType = new ContentType("text", "plain", charset: "utf-8")
-                ..close();
+            this._callListenerForErrorDocument(HttpStatus.NOT_FOUND, httpRequest);
           }
         }
       }
@@ -128,11 +182,18 @@ class HttpServerRequestHandler {
 
   /**
    * Register a file and return a Stream for adding a listeners to when that filepath is requested.
+   *
+   * DEPRECATED: Please begin using forUrlData(UrlData).onRequest.listen() instead.
    */
-  Stream<HttpRequest> registerFile(final UrlData urlData) {
+  @deprecated
+  Stream<HttpRequest> registerFile(final UrlPath urlData) {
     this._possibleFiles[urlData.path] = urlData.id;
 
     return this._functionStore[urlData.id];
+  }
+
+  RequestPath forRequestPath(final UrlPath urlPath) {
+    return new RequestPath(urlPath);
   }
 
   /**
@@ -141,7 +202,7 @@ class HttpServerRequestHandler {
    * [pathToRegister] - The path that will navigated to in order to call this; e.g. "/support/client/contact-us"
    * [authUserList] - A list of
    */
-  Stream<HttpRequest> registerPathWithBasicAuth(final UrlData pathToRegister, final List<AuthUserData> authUserList) {
+  Stream<HttpRequest> registerPathWithBasicAuth(final UrlPath pathToRegister, final List<AuthUserData> authUserList) {
     if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('HttpServerRequestHandler.registerPathWithAuth() -> Stream<HttpRequest>');
 
     if (authUserList.length == 0) {
@@ -197,7 +258,7 @@ class HttpServerRequestHandler {
     return const _AuthCheckResults(false);
   }
 
-  /// Send an HTTP 401 Auth required response
+  /// Helper for sending an HTTP 401 Auth required response
   static void sendRequiredBasicAuthResponse(final HttpRequest httpRequest, final String errMessage) {
     httpRequest.response
         ..statusCode = HttpStatus.UNAUTHORIZED
@@ -206,21 +267,25 @@ class HttpServerRequestHandler {
         ..close();
   }
 
-  static void sendPageNotFoundResponse(final HttpRequest httpRequest, final String errMessage) {
+  /// Helper for sending a HTTP 404 response with an optional custom HTML error message.
+  static void sendPageNotFoundResponse(final HttpRequest httpRequest, [final String responseVal = '404 - Page not found']) {
     httpRequest.response
         ..statusCode = HttpStatus.NOT_FOUND
-        ..write('404 - Page not found')
+        ..headers.contentType = new ContentType('text', 'html', charset: 'utf-8')
+        ..write(responseVal)
         ..close();
   }
 
-  static void sendInternalServerErrorResponse(final HttpRequest httpRequest, final String errMessage) {
+  /// Helper for sending an HTTP 500 response with an optional custom HTML error message.
+  static void sendInternalServerErrorResponse(final HttpRequest httpRequest, [final String responseVal = '500 - Internal Server Error']) {
     httpRequest.response
         ..statusCode = HttpStatus.INTERNAL_SERVER_ERROR
-        ..write('500 - Internal Server Error')
+        ..headers.contentType = new ContentType('text', 'html', charset: 'utf-8')
+        ..write(responseVal)
         ..close();
   }
 
-  Stream<HttpRequest> registerDirectory(final UrlData urlData) {
+  Stream<HttpRequest> registerDirectory(final UrlPath urlData) {
     if (urlData.path.endsWith('/') == false) {
       throw 'Urls registered as directories must end with a trailing forward slash ("/"); e.g. "/profile_pics/80/".';
     }
@@ -236,17 +301,15 @@ class HttpServerRequestHandler {
    * [urlData] - The path to navigate to in your browser to load this file.
    * [pathToFile] - The path on your computer to read the file contents from.
    * [enableCaching] (opt) - Should this file be cached in memory after it is first read? Default is true.
-   * [isRelativeFilePath] (opt) - Is the [pathToFile] value a relative path? Default is true.
    */
-  Future<Null> serveStaticFile(final UrlData urlData, String pathToFile, {
-    final bool enableCaching: true,
-    final bool isRelativeFilePath: true
+  Future<Null> serveStaticFile(final UrlPath urlData, String pathToFile, {
+    final bool enableCaching: true
   }) async {
-    if (path.isRelative(pathToFile) && isRelativeFilePath) {
-      final Uri _scriptRuntimeUri = Uri.parse(Platform.script.path);
-      final Uri _absoluteUriAfterResolving = _scriptRuntimeUri.resolve(pathToFile);
+    // Is the provided path a relative path that needs to be made absolute?
+    if (path.isRelative(pathToFile)) {
+      pathToFile = path.join(Directory.current.path, pathToFile);
 
-      pathToFile = _absoluteUriAfterResolving.toFilePath();
+      if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('Resolved the Uri to be: ($pathToFile)');
     }
 
     final File file = new File(pathToFile);
@@ -305,6 +368,23 @@ class HttpServerRequestHandler {
   }
   */
 
+  // Deprecating in favor of serverStaticVirtualDirectory and serveDynamicVirtualDirectory
+  @deprecated
+  Future<Null> serveVirtualDirectory(String pathToDirectory, final List<String> supportedFileExtensions, {
+    final bool includeContainerDirNameInPath: false,
+    final bool shouldFollowLinks: false,
+    final String prefixWithPseudoDirName: '',
+    final bool isRelativeDirPath: true,
+    final bool parseForFilesRecursively: true
+  }) {
+    return this.serveStaticVirtualDirectory(pathToDirectory,
+        supportedFileExtensions: supportedFileExtensions,
+        includeContainerDirNameInPath: includeContainerDirNameInPath,
+        shouldFollowLinks: shouldFollowLinks,
+        prefixWithPseudoDirName: prefixWithPseudoDirName,
+        parseForFilesRecursively: parseForFilesRecursively);
+  }
+
   /**
    * Serve this entire directory automatically, but only for the allowed file extensions.
    *
@@ -312,84 +392,130 @@ class HttpServerRequestHandler {
    * [supportedFileExtensions] - A list of file extensions (without the "." before the extension name) that are allowed to be served from this directory.
    * [includeContainerDirNameInPath] - Should the folder being served also have it's name in the browser navigation path; such as serving a 'js/' folder while retaining 'js/' in the browser Url; default is false.
    * [shouldFollowLinks] - Should SymLinks be treated as they are in this directory and, therefore, served?
+   * [prefixWithPseudoDirName]
+   * [parseForFilesRecursively]
    *
-   *     new WebServer().serveVirtualDirectory('web/js', ['.js'],
+   *     new WebServer().serveVirtualDirectory('web/js',
+   *       supportedFileExtensions: ['html', 'dart', 'js', 'css'],
+   *       shouldPreCache: true,
    *       parseForFilesRecursively: false);
    */
-  Future<Null> serveVirtualDirectory(String pathToDirectory, final List<String> supportedFileExtensions, {
+  Future<Null> serveStaticVirtualDirectory(String pathToDirectory, {
+    final List<String> supportedFileExtensions: null,
+    final bool shouldPreCache: false,
     final bool includeContainerDirNameInPath: false,
     final bool shouldFollowLinks: false,
     final String prefixWithPseudoDirName: '',
-    final bool isRelativeDirPath: true,
     final bool parseForFilesRecursively: true
   }) async {
     if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('_HttpServerRequestHandler.serveVirtualDirectory(String, List, {bool}) -> Future<Null>');
 
-    // Make sure that supported file extensions were supplied.
-    if (supportedFileExtensions == null || supportedFileExtensions.length == 0) {
-      throw 'There were no supported file extensions set. Nothing would have been included from this directory.';
+    final Completer<Null> completer = new Completer<Null>();
+
+    // Make sure that more than zero supported file extensions were supplied, if a List was supplied.
+    if (supportedFileExtensions != null && supportedFileExtensions.length == 0) {
+      throw 'There were no supported file extensions set in the List. Nothing would have been included from this directory.';
     }
 
-    if (path.isRelative(pathToDirectory) && isRelativeDirPath) {
-      final Uri _scriptRuntimeUri = Uri.parse(Platform.script.path);
-      final Uri _absoluteUriAfterResolving = _scriptRuntimeUri.resolve(pathToDirectory);
+    // Is the provided directory path for virtualizing a relative path that needs to be made absolute?
+    if (path.isRelative(pathToDirectory)) {
+      pathToDirectory = path.join(Directory.current.path, pathToDirectory);
 
-      pathToDirectory = _absoluteUriAfterResolving.toFilePath();
-
-      if (HttpServerRequestHandler.shouldBeVerbose) {
-        ServerLogger.log('Resolved the Uri to be: ($pathToDirectory)');
-      }
+      if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('Resolved the Uri to be: ($pathToDirectory)');
     }
 
-    // Get the directory for virtualizing
+    // Get the directory for virtualizing.
     final Directory dir = new Directory(pathToDirectory);
 
     // If the directory exists
     if (await dir.exists()) {
+      // The directory entity looper will not hold this method from returning when using `await`,
+      // so this List must be used to add all of the Futures to and wait for them to complete.
+      final List<Future> _queueOfCacheEventsToWaitFor = <Future>[];
+
       // Loop through all of the entities in this directory and determine which ones to make serve later.
       dir.list(recursive: parseForFilesRecursively, followLinks: shouldFollowLinks).listen((final FileSystemEntity entity) async {
         final FileStat fileStat = await entity.stat();
 
-        for (String supportedFileExtension in supportedFileExtensions) {
-          // If this is a file AND ends with a supported file extension
-          if (fileStat.type == FileSystemEntityType.FILE && entity.path.toLowerCase().endsWith('.$supportedFileExtension')) {
-            final String _containerDirectoryPath = pathToDirectory;
-            final String _filePathFromContainerDirectory = entity.path.replaceFirst(_containerDirectoryPath, '');
-            String _optPrefix = (includeContainerDirNameInPath) ? path.basename(_containerDirectoryPath) : '';
+        // Don't process if this is not a file.
+        if (fileStat.type != FileSystemEntityType.FILE) {
+          return;
+        }
 
-            if (prefixWithPseudoDirName != null &&
-                prefixWithPseudoDirName.isNotEmpty)
-            {
-              if (_optPrefix.isNotEmpty) {
-                _optPrefix = prefixWithPseudoDirName + '/' + _optPrefix; // 'psuedoPrefix' + '/' + 'web';
-              } else {
-                _optPrefix = prefixWithPseudoDirName; // 'pseudoPrefix';
-              }
+        // Does this Filesystem entity need to be filtered by its file extension?
+        if (supportedFileExtensions != null) {
+          final String _ext = path.extension(entity.path);
+
+          if (supportedFileExtensions.contains(_ext)) {
+            _addFileToVirtualDirectoryListing(entity, pathToDirectory, includeContainerDirNameInPath, prefixWithPseudoDirName);
+
+            if (shouldPreCache) {
+              _queueOfCacheEventsToWaitFor.add(Cache.addFile(entity.uri, shouldPreCache: true));
             }
-
-            final _VirtualDirectoryFileData _virtualFileData = new _VirtualDirectoryFileData(
-                _containerDirectoryPath,
-                _filePathFromContainerDirectory,
-                _optPrefix
-              );
-
-            if (shouldBeVerbose) {
-              ServerLogger.log('Adding virtual file: ' + _virtualFileData.absoluteFileSystemPath + ' at Url: ' + _virtualFileData.httpRequestPath);
-            }
-
-            this._virtualDirectoryFiles.add(_virtualFileData);
-
-            break;
           }
+        } else {
+          _addFileToVirtualDirectoryListing(entity, pathToDirectory, includeContainerDirNameInPath, prefixWithPseudoDirName);
+
+          if (shouldPreCache) {
+            _queueOfCacheEventsToWaitFor.add(Cache.addFile(entity.uri, shouldPreCache: true));
+          }
+        }
+      }, onDone: () {
+        // If there are files to wait for to add to Cache, wait for all of these to return.
+        if (_queueOfCacheEventsToWaitFor.isNotEmpty) {
+          Future.wait(_queueOfCacheEventsToWaitFor).then((_) {
+            completer.complete();
+          });
+        } else {
+          completer.complete();
         }
       });
     } else {
       ServerLogger.error('The directory path supplied was not found in the filesystem at: (${dir.path})');
+
+      completer.complete();
     }
+
+    return completer.future;
   }
 
+  void _addFileToVirtualDirectoryListing(final FileSystemEntity entity,
+      final String pathToDirectory,
+      final bool includeContainerDirNameInPath,
+      final String prefixWithPseudoDirName)
+  {
+    final String _containerDirectoryPath = pathToDirectory;
+    final String _filePathFromContainerDirectory = entity.path.replaceFirst(_containerDirectoryPath, '');
+    String _optPrefix = (includeContainerDirNameInPath) ? path.basename(_containerDirectoryPath) : '';
+
+    if (prefixWithPseudoDirName != null &&
+        prefixWithPseudoDirName.isNotEmpty)
+    {
+      if (_optPrefix.isNotEmpty) {
+        _optPrefix = prefixWithPseudoDirName + '/' + _optPrefix; // 'psuedoPrefix' + '/' + 'web';
+      } else {
+        _optPrefix = prefixWithPseudoDirName; // 'pseudoPrefix';
+      }
+    }
+
+    final _VirtualDirectoryFileData _virtualFileData = new _VirtualDirectoryFileData(
+        _containerDirectoryPath,
+        _filePathFromContainerDirectory,
+        _optPrefix
+    );
+
+    if (HttpServerRequestHandler.shouldBeVerbose) {
+      ServerLogger.log('Adding virtual file: ' + _virtualFileData.absoluteFileSystemPath + ' at Url: ' + _virtualFileData.httpRequestPath);
+    }
+
+    this._virtualDirectoryFiles.add(_virtualFileData);
+  }
+
+  // Coming soon! (commented at 12.20.2015 during v2.0.0 development)
+  //Future<Null> serveDynamicVirtualDirectory() async {}
+
   /**
-   * All HTTP requests starting the the specified [UrlData] path String parameter will be
+   * All HTTP requests starting the the specified [UrlPath] path String parameter will be
    * forwarded to the attached event listener.
    *
    * This is a useful method for catching all API prefixed path requests and handling them
@@ -397,18 +523,19 @@ class HttpServerRequestHandler {
    *
    *     .handleRequestsStartingWith(new UrlData('/api/')).listen(apiRouter);
    */
-  Stream<HttpRequest> handleRequestsStartingWith(final UrlData urlPathStartData) {
+  Stream<HttpRequest> handleRequestsStartingWith(final UrlPath urlPathStartData) {
     this._urlPathStartString.add(urlPathStartData);
 
     return this._functionStore[urlPathStartData.id];
   }
 
-  /*void serveVirtualDirectoryWithAuth() {}*/
+  // Arriving eventually!
+  // void serveVirtualDirectoryWithAuth() {}
 
   /**
    * Serve the file with zero processing done to it.
    */
-  static Future<Null> _serveStandardFile(final String pathToFile, final HttpRequest httpRequest) async {
+  Future<Null> _serveStandardFile(final String pathToFile, final HttpRequest httpRequest) async {
     try {
       if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('_HttpServerRequestHandler::_serveStandardFile(String, HttpRequest) -> Future<Null>');
 
@@ -420,25 +547,43 @@ class HttpServerRequestHandler {
 
         // Determine the content-type to send, if possible
         if (HttpServerRequestHandler._fileExtensions.containsKey(fileExtension)) {
-          final List<String> _mimeTypePieces = HttpServerRequestHandler._fileExtensions[path.extension(standardFile.path)];
-
-          httpRequest.response.headers.contentType = new ContentType(_mimeTypePieces[0], _mimeTypePieces[1]);
+          httpRequest.response.headers.contentType = HttpServerRequestHandler._fileExtensions[fileExtension];
         }
 
         // Read the file, and send it to the client
         await standardFile.openRead().pipe(httpRequest.response);
       } else { // File not found
-        if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.error('File not found at path: ($pathToFile)');
+        if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.error('_HttpServerRequestHandler::_serveStandardFile(String, HttpRequest) - File not found at path: ($pathToFile)');
 
-        httpRequest.response
-            ..statusCode = HttpStatus.NOT_FOUND
-            ..headers.contentType = new ContentType("text", "plain", charset: "utf-8");
+        this._callListenerForErrorDocument(HttpStatus.NOT_FOUND, httpRequest);
       }
-    } catch(err) {
+    } catch(err, stackTrace) {
       ServerLogger.error(err);
+      ServerLogger.error(stackTrace);
     } finally {
       httpRequest.response.close();
     }
+  }
+
+  /**
+   * Add a new content type to the server that didn't come prepackaged with the server.
+   */
+  static void addContentType(final String fileExtension, final ContentType contentType) {
+    HttpServerRequestHandler._fileExtensions[fileExtension] = contentType;
+  }
+}
+
+class RequestPath {
+  static final FunctionStore _functionStore = new FunctionStore();
+  static final Map<String, int> _possibleUrlDataFormats = <String, int>{};
+  UrlPath urlData;
+
+  RequestPath(final UrlPath this.urlData);
+
+  Stream<HttpRequest> get onRequest {
+    RequestPath._possibleUrlDataFormats[urlData.path] = urlData.id;
+
+    return RequestPath._functionStore[urlData.id];
   }
 }
 
@@ -479,9 +624,7 @@ ContentType getContentTypeForFilepathExtension(final String filePath) {
   final String extension = new RegExp(r'\.\S+$').firstMatch(filePath).group(0);
 
   if (HttpServerRequestHandler._fileExtensions.containsKey(extension)) {
-    final List<String> _fileExtensionData = HttpServerRequestHandler._fileExtensions[extension];
-
-    return new ContentType(_fileExtensionData[0], _fileExtensionData[1]);
+    return HttpServerRequestHandler._fileExtensions[extension];
   }
 
   return null;
@@ -523,16 +666,16 @@ class _VirtualDirectoryFileData {
  * This is most often used for telling the server what the navigation Url will
  * be for a method to register at.
  */
-class UrlData {
-  static int _pageIndex = 0;
+class UrlPath {
+  static int _pageCounterIndex = 0;
   final int id;
   final String path;
 
-  factory UrlData(final String url) {
-    return new UrlData._internal(UrlData._pageIndex++, url);
+  factory UrlPath(final String urlPath) {
+    return new UrlPath._internal(UrlPath._pageCounterIndex++, urlPath);
   }
 
-  const UrlData._internal(final int this.id, final String this.path);
+  const UrlPath._internal(final int this.id, final String this.path);
 }
 
 class _AuthCheckResults {
