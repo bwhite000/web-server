@@ -61,6 +61,10 @@ v2.0.0 (12.20.2015)
 * __HttpServerRequestHandler (serveStaticFile):__ Automatically detects relative file paths and more
   efficiently resolves the relative path to access the static file; removed the redundant `isRelativePath`
   parameter.
+* __ReadMe:__ Clarification to some of the code examples and section titles; added details about SocialFlare
+  to the "Who is using this package?" section.
+* __LICENSE:__ Added a LICENSE file to allow other developers to use this code and for compatibility with the
+  Dart Pub requirements.
 
 v1.1.4 (5.14.2015)
 ------------------

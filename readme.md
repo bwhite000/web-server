@@ -9,9 +9,13 @@ with all of the difficult auth checking and responding taken care of by the serv
 
 #### Who is using this package?
 
+__[SocialFlare](https://socialflare.us/)__
+* Used for preprocessing and serving webpages and resources, serving API responses, and multiple other features.
+* __Major backer:__ Guarantees long-term support for this project's concept. Thank you, SocialFlare!
+
 __[Ebates, Inc.](http://www.ebates.com/)__
-- For a handful of internal tools for organizing data and serving stat pages.
-- Used to serve a realtime Purchases Stat information webpage to merchant representatives at the __Ebates MAX Conference__
+* For a handful of internal tools for organizing data and serving stat pages.
+* Used to serve a realtime Purchases Stat information webpage to merchant representatives at the __Ebates MAX Conference__
   built around this package.
 
 Use Example (for no coding needed)
@@ -45,7 +49,7 @@ Please check out the ["example/"](example/) folder in this package for full deta
 Use Angular-like variables, which will be converted using a helper method from this package (see Dart
 code below).
 
-*--- index.html ---*
+*=== index.html ===*
 ~~~html
 <body>
   <h1>Welcome, {{username}}!</h1>
@@ -54,9 +58,9 @@ code below).
 </body>
 ~~~
 
-Then, process variables like PHP on the Dart server side.
+Then, process variables like PHP on the Dart server side:
 
-*--- main.dart ---*
+*=== main.dart ===*
 ~~~dart
 import "dart:io";
 import "package:web_server/web_server.dart" as webServer;
@@ -94,19 +98,35 @@ import "dart:io";
 import "package:web_server/web_server.dart" as webServer;
 
 void main() {
-  // Initialize the WebServer  
+  // Initialize the WebServer
   final webServer.WebServer localWebServer = new webServer.WebServer(InternetAddress.ANY_IP_V4, 8080,
         hasHttpServer: true);
         
   localWebServer.httpServerHandler
-      // NOTE: ApiHandler would be a Class or namespace created by you in your code, for example
+      // NOTE: ApiHandler would be a Class or namespace created by you in your code, for example.
       ..handleRequestsStartingWith(new webServer.UrlPath('/api/categories')).listen(ApiHandler.forCategories)
       ..handleRequestsStartingWith(new webServer.UrlPath('/api/products')).listen(ApiHandler.forProducts)
-      ..handleRequestsStartingWith(new webServer.UrlPath('/api/users')).listen(ApiHandler.forUserInfo);
+      ..handleRequestsStartingWith(new webServer.UrlPath('/api/users')).listen((final HttpRequest httpRequest) {
+        // Create the Object for the response
+        final webServer.ApiResponse apiResponse = new webServer.ApiResponse()
+            ..addData("username", "mrDude") // Add data
+            ..addData("email", "radical_surfer@example.com")
+            ..addData("userId", 1425302);
+
+        // Send the data back through to the request
+        httpRequest.response
+            // Set to "application/json; charset=utf-8"
+            ..headers.contentType = ContentType.JSON
+            
+            // Stringify the JSON output, then send to client
+            ..write(apiResponse.toJsonEncoded())
+            
+            ..close();
+      });
 }
 ~~~
 
-### Static File Implementation/Basic
+### Static File Directory/Basic WebServer
 
 ~~~dart
 import "dart:io";
@@ -123,7 +143,7 @@ Future<Null> main() async {
       // Automatically recursively parse and serve all items in this
       // directory matching the accepted file types (optional parameter).
       .serveStaticVirtualDirectory('web',
-          supportedFileExtensions: const <String>['html', 'css', 'dart', 'js'],
+          supportedFileExtensions: const <String>['html', 'css', 'dart', 'js'], // Optional restriction
           shouldPreCache: true);
 }
 ~~~
@@ -143,6 +163,8 @@ void main() {
   // Initialize the WebServer with the hasWebSocketServer parameter
   final webServer.WebServer localWebServer = new webServer.WebServer(InternetAddress.ANY_IP_V4, 8080,
           hasHttpServer: true, hasWebSocketServer: true);
+          
+  // HTTP Server handlers code here...
   
   // Attach WebSocket command listeners and base events
   localWebServer.webSocketServerHandler
