@@ -44,7 +44,7 @@ Features & Use Example (for coders)
 
 Please check out the ["example/"](example/) folder in this package for full details.
 
-### For processing HTML like PHP
+### For preprocessing HTML like PHP
 
 Use Angular-like variables, which will be converted using a helper method from this package (see Dart
 code below).

@@ -1,70 +1,106 @@
 WebServer Changelog
 ===================
 
+v2.0.0+1 (12.22.2015)
+---------------------
+
+### Library Changes
+  
+* `HttpServerRequestHandler`
+  * Added better comments to some methods for the DartDocs generator to make better use of.
+  * Removed the need for the '.' in the supportedFileExtensions extension list in `serveStaticVirtualDirectory`
+    that was unintentionally introduced in the previous release; functionality still behaved like before,
+    but the dot was needed; not anymore now.
+
+### Documentation/Example Changes
+
+* ReadMe
+  * Updated some code examples and section information to be easier to understand.
+  
+* Code Example Files
+  * Cleaned-up and fixed the code to be efficiently and aesthetically better; e.g. added the `final` keyword
+    in a few missing spots.
+
+* Changelog
+  * Made the markdown data easier to read by dividing common change areas into sections; inspired by the
+    Changelog pattern in the main Dart SDK GitHub.
+
 v2.0.0 (12.20.2015)
 -------------------
-* __HttpServerRequestHandler:__ Added content types for .mp3, .ogg, .oga, .ogv.
-* __HttpServerRequestHandler:__ Changed the \_fileExtensions content types over to using the ContentType
- Object instead of a List<String> and having to build the ContentType Object for every request; also,
- removed the declaration of it being a 'const' so that a developer using the server would be able to add
- their own new content types programatically.
-* __HttpServerRequestHandler:__ Some code clean-up and optimizations for the occasional variable reuse
-  optimization or the similar.
-* __HttpServerRequestHandler:__ Created a new format for listening for webpage path requests to make it
-  easier to understand and more intuitive by making the event format similar to binding DOM events on a
-  webpage, like, for example, the format of `querySelector('...').onClick.listen((_) {})`.
-* __WebServer:__ Added a new constructor for binding a secure server and switched the syntax to using
-  the new Dart 1.13 BoringSSL format instead of the old NSS method; use the new WebServer.secure()
-  constructor to support this.
-* __WebServer:__ Removed the 'GET' and 'POST' allowedMethods default value so that any type of request
-  header will be allowed by default; the developer will no longer have to specify every type of allowed
-  request method.
-* __WebServer:__ Bumped the default wait time for a response to generate from the server code (response
-  deadline) from 20 seconds to 30 seconds to allow for more complex response generation to not catch
-  the developer off guard as quickly in case the developer isn't coding with this deadline in mind.
-* Improved some of the verbose error logging by including the name of the Class and method in the error
-  text to make debugging easier (especially if manually working with a forked version of this repo and
-  learning how it works).
-* __HttpServerRequestHandler:__ Added a method and structures for opening the ability for developers
-  using this package to add their own custom error code handlers using `.onErrorDocument()`.
-* Updated the examples files to demonstrate some of this release's API changes and additions.
-* __HttpServerRequestHandler:__ Deprecated `serveVirtualDirectory()` in favor of the clearer and having
-  more features, like being dynamic, `serveStaticVirtualDirectory()` and `serveDynamicVirtualDirectory()`
-  (arriving eventually; a.k.a. coming soon).
-* __HttpServerRequestHandler:__ Renamed the `UrlData` Class to `UrlPath` to make it easier to understand
-  what the Object is representing.
-* Added an `bin/` directory and an executable rule to the Pubspec to enable using this package with
-  `pub global activate` and running a server right from a directory using the command line without even
-  having to write any code! It's as simple as the `web_server` command from the terminal, and it will
-  serve that directory as a `serveStaticVirtualDirectory()` command.
-* __HttpServerRequestHandler (serveStaticVirtualDirectory):__ Made the requirement of providing a
-  whitelist of supported file extensions an optional parameter to allow for serving an entire directory,
-  or a directory with flexible file types, simple and not requiring a server restart; also, this makes
-  it possible for the pub global `web_server` command to operate with any directory's files.
-* Updates to the ReadMe for the new methods and features; clarified and demonstrated features that might
-  not have been as well-known or exemplified before; added a testimonial for my work using this package in
-  many side projects and work-requested projects at Ebates.
-* __HttpServerRequestHandler:__ Removed a loop that was checking file extensions on every file entity for
-  a match in the `serveStaticVirtualDirectory` and is now doing a `.contains()` on the List to be much faster
-  and loop less.
-* __HttpServerRequestHandler (serveStaticVirtualDirectory):__ Removed the redundant `isRelativePath`
-  parameter.
-* __HttpServerRequestHandler (serveStaticVirtualDirectory):__ Now, there is a parameter to enable pre-caching
-  for files in this static Directory to make reads pull from memory instead of the FileSystem, which will be
-  much faster and economical.
-* Updated the code examples directory files to reflect the new API changes and additions.
-* __ReadMe:__ Added a section asking other developers to let me know if they are making something exciting
-  using my Dart package.
-* __HttpServerRequestHandler:__ Improved the helper methods for sending 404 and 500 errors easily with
-  `sendPageNotFoundResponse()` and `sendInternalServerErrorResponse()`; will now use the supplied custom
-  error response HTML from the developer, if provided.
-* __HttpServerRequestHandler (serveStaticFile):__ Automatically detects relative file paths and more
-  efficiently resolves the relative path to access the static file; removed the redundant `isRelativePath`
-  parameter.
-* __ReadMe:__ Clarification to some of the code examples and section titles; added details about SocialFlare
-  to the "Who is using this package?" section.
-* __LICENSE:__ Added a LICENSE file to allow other developers to use this code and for compatibility with the
-  Dart Pub requirements.
+
+### Library Changes
+
+* `WebServer`
+  * Added a new constructor for binding a secure server and switched the syntax to using the new Dart 1.13
+  BoringSSL format instead of the old NSS method; use the `new WebServer.secure()` constructor to support this.
+  * Removed the 'GET' and 'POST' allowedMethods default value so that any type of request header will be
+    allowed by default; the developer will no longer have to specify every type of allowed request method.
+  * Bumped the default wait time for a response to generate from the server code (response deadline) from
+    20 seconds to 30 seconds to allow for more complex response generation to not catch the developer off
+    guard as quickly in case the developer isn't coding with this deadline in mind.
+
+* `HttpServerRequestHandler`
+  * Added content types for .mp3, .ogg, .oga, .ogv.
+  * Changed the \_fileExtensions content types over to using the ContentType Object instead of a List<String>
+    and having to build the ContentType Object for every request; also, removed the declaration of it being a
+    'const' so that a developer using the server would be able to add their own new content types
+    programatically.
+  * Some code clean-up and optimizations for the occasional variable reuse optimization or the similar.
+  * Created a new format for listening for webpage path requests to make it easier to understand and more
+    intuitive by making the event format similar to binding DOM events on a webpage, like, for example, the
+    format of `querySelector('...').onClick.listen((_) {})`.
+  * Added a method and structures for opening the ability for developers using this package to add their own
+    custom error code handlers using `.onErrorDocument()`.
+  * Deprecated `serveVirtualDirectory()` in favor of the clearer and having more features, like being dynamic,
+    `serveStaticVirtualDirectory()` and `serveDynamicVirtualDirectory()` (arriving eventually; a.k.a. coming
+    soon).
+  * Renamed the `UrlData` Class to `UrlPath` to make it easier to understand what the Object is representing.
+  * `serveStaticVirtualDirectory`
+    * Made the requirement of providing a whitelist of supported file extensions
+      an optional parameter to allow for serving an entire directory, or a directory with flexible file types,
+      simple and not requiring a server restart; also, this makes it possible for the pub global `web_server`
+      command to operate with any directory's files.
+    * Removed a loop that was checking file extensions on every file entity for a match in the
+      `serveStaticVirtualDirectory` and is now doing a `.contains()` on the List to be much faster and loop
+      less.
+    * Removed the redundant `isRelativePath` parameter.
+    * Now, there is a parameter to enable pre-caching for files in this static Directory to make reads pull
+      from memory instead of the FileSystem, which will be much faster and economical.
+  * Improved the helper methods for sending 404 and 500 errors easily with `sendPageNotFoundResponse()` and
+    `sendInternalServerErrorResponse()`; will now use the supplied custom error response HTML from the developer,
+    if provided.
+  * `serveStaticFile:` Automatically detects relative file paths and more efficiently resolves the relative path
+    to access the static file; removed the redundant `isRelativePath` parameter.
+    
+* Improved some of the verbose error logging by including the name of the Class and method in the error text to
+  make debugging easier (especially if manually working with a forked version of this repo and learning how it
+  works).
+
+### Tool Changes
+
+* `web_server`
+  * Added an `bin/` directory and an executable rule to the Pubspec to enable using this package with `pub global
+    activate` and running a server right from a directory using the command line without even having to write any
+    code! It's as simple as the `web_server` command from the terminal, and it will serve that directory as a
+    `serveStaticVirtualDirectory()` command.
+
+### Documentation/Example Changes
+
+* ReadMe
+  * Updates for the new methods and features; clarified and demonstrated features that might not have been as
+    well-known or exemplified before; added a testimonial for my work using this package in many side projects
+    and work-requested projects at Ebates.
+  * Added a section asking other developers to let me know if they are making something exciting using my Dart
+    package.
+  * Clarification to some of the code examples and section titles; added details about SocialFlare to the
+    "Who is using this package?" section.
+    
+* Code Example Files
+  * Updated the code examples directory files to reflect the new API changes and additions from this release.
+    
+* LICENSE
+  * Added a LICENSE file to allow other developers to use this code and for compatibility with the Dart Pub
+    requirements.
 
 v1.1.4 (5.14.2015)
 ------------------

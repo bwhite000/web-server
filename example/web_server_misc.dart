@@ -2,12 +2,12 @@ import "dart:io";
 import "package:web_server/web_server.dart";
 
 void main() {
-  // Initialize the WebServer
+  // Initialize and bind the HTTP and WebSocket WebServer
   final WebServer localWebServer = new WebServer(InternetAddress.LOOPBACK_IP_V4, 8080,
       hasHttpServer: true, hasWebSocketServer: true);
 
   // Log out some of the connection information
-  print('Local web server started at: (http://${localWebServer.address.address}:${localWebServer.port})'); // http://127.0.0.1:8080
+  stdout.writeln('Local web server started at: (http://${localWebServer.address.address}:${localWebServer.port})'); // http://127.0.0.1:8080
 
   HttpServerRequestHandler.shouldBeVerbose = true;
 
@@ -47,7 +47,7 @@ void main() {
           })
 
       // Add a custom function for handling the request in case of the error code supplied as the parameter.
-      ..onErrorDocument(HttpStatus.NOT_FOUND, (HttpRequest httpRequest) {
+      ..onErrorDocument(HttpStatus.NOT_FOUND, (final HttpRequest httpRequest) {
         httpRequest.response
             ..statusCode = HttpStatus.NOT_FOUND
             ..headers.contentType = new ContentType('text', 'html', charset: 'utf-8')

@@ -386,7 +386,9 @@ class HttpServerRequestHandler {
   }
 
   /**
-   * Serve this entire directory automatically, but only for the allowed file extensions.
+   * Serve this entire directory automatically, but only for the allowed file extensions. Parses the
+   * files in the Directory when the server is started, and will reflect changes to those files, but
+   * will not serve files newly added to the directory after the static scraping has happened.
    *
    * [pathToDirectory] - The path to this directory to server files recursively from.
    * [supportedFileExtensions] - A list of file extensions (without the "." before the extension name) that are allowed to be served from this directory.
@@ -444,9 +446,10 @@ class HttpServerRequestHandler {
 
         // Does this Filesystem entity need to be filtered by its file extension?
         if (supportedFileExtensions != null) {
-          final String _ext = path.extension(entity.path);
+          // Change the returned '.html' to 'html', for example, to match the supportedFileExtensions list.
+          final String _extWithoutDot = path.extension(entity.path).replaceFirst(new RegExp(r'^\.'), '');
 
-          if (supportedFileExtensions.contains(_ext)) {
+          if (supportedFileExtensions.contains(_extWithoutDot)) {
             _addFileToVirtualDirectoryListing(entity, pathToDirectory, includeContainerDirNameInPath, prefixWithPseudoDirName);
 
             if (shouldPreCache) {
