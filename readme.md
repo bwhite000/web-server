@@ -63,8 +63,8 @@ Then, process variables like PHP on the Dart server side:
 *=== main.dart ===*
 ~~~dart
 import "dart:io";
-import "package:html/parser.dart' as domParser; // https://pub.dartlang.org/packages/html
-import "package:html/dom.dart' as dom;
+import "package:html/parser.dart" as domParser; // https://pub.dartlang.org/packages/html
+import "package:html/dom.dart" as dom;
 import "package:web_server/web_server.dart" as webServer;
 
 void main() {
