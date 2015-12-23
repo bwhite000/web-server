@@ -63,6 +63,8 @@ Then, process variables like PHP on the Dart server side:
 *=== main.dart ===*
 ~~~dart
 import "dart:io";
+import "package:html/parser.dart' as domParser; // https://pub.dartlang.org/packages/html
+import "package:html/dom.dart' as dom;
 import "package:web_server/web_server.dart" as webServer;
 
 void main() {
@@ -81,9 +83,23 @@ void main() {
         "todayDate": '${new DateTime.now()}'
       });
       
+      // ===== AND/OR =====
+      // Interact with the HTML like client side Dart.
+      final dom.Document document = domParser.parse(indexFileContents);
+      
+      // The HTML library has its own Element Objects; separate from the 'dart:html' ones.
+      final dom.Element pElm = document.querySelector('p');
+      
+      pElm.remove(); // Remove the <p> Element from the document's DOM.
+      
+      // Add data to and close out the Http request's response.
       httpRequest.response
           ..headers.contentType = new ContentType('text', 'html', charset: 'utf-8')
+          
           ..write(indexFileContents)
+          // OR
+          ..write(document.outerHtml)
+          
           ..close();
     });
 }

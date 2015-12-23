@@ -16,6 +16,10 @@ v2.0.0+1 (12.22.2015)
 
 * ReadMe
   * Updated some code examples and section information to be easier to understand.
+  * Added a code example of preprocessing using the `html` Dart package to show that a developer can modify
+    web pages as richly and complexly as they could on the client side, but before even serving the page; this
+    way, the developer can have code templates in their web page's HTML, use it on the server like client side
+    DOM to fill it with data and clone it, if wanted, then return the built page to the client.
   
 * Code Example Files
   * Cleaned-up and fixed the code to be efficiently and aesthetically better; e.g. added the `final` keyword
