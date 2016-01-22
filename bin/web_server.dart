@@ -8,9 +8,7 @@ Future<Null> main(final List<String> args) async {
 
   stdout.writeln('WebServer started at port $port');
 
-  stdout.writeln('Caching files recursively from this directory...');
-  await localWebServer.httpServerHandler.serveStaticVirtualDirectory(Directory.current.path, shouldPreCache: true);
-  stdout.writeln('Done caching files recursively from this directory!');
+  await localWebServer.httpServerHandler.serveStaticVirtualDirectory(Directory.current.path, shouldPreCache: false);
 
   // Handle errors
   localWebServer.httpServerHandler

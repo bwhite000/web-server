@@ -1,6 +1,17 @@
 WebServer Changelog
 ===================
 
+v2.0.0+2 (1.13.2016)
+--------------------
+
+### Tool Changes
+
+* `web_server` - pub global
+  * `shouldPreCache` has been changed to false since the Dart language seems to not be closing out filesystem
+    connections, even when explicitly coded to, and will error when setting up to serve directories with more
+    files than the computer's maximum file connection limit; will now cache as the files are requested instead
+    of in advance.
+
 v2.0.0+1 (12.22.2015)
 ---------------------
 
