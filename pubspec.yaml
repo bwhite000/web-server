@@ -1,5 +1,5 @@
 name: web_server
-version: 2.0.0+2
+version: 2.0.0+3
 author: Brandon White <jennexproject+webserver@gmail.com>
 description: An efficient server library for quickly creating a WebServer and handling HTTP requests, WebSocket connections, and API requests.
 homepage: https://github.com/bwhite000/web-server

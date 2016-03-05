@@ -19,7 +19,7 @@ __[Ebates, Inc.](http://www.ebates.com/)__
   built around this package.
 
 Use Example (for no coding needed)
---------------------------------------------------------------
+----------------------------------
 
 You can use this WebServer to serve files without even having to code a single line. Using Dart's
 `pub global activate` feature, you can add the WebServer package as an executable to call from the
@@ -35,12 +35,29 @@ pub global activate web_server
 cd /path/to/directory
 
 # Activate the WebServer on that Directory. Defaults to port 8080.
-# http://127.0.0.1:8080/path/to/file
-web_server
+# May require 'sudo' on Mac/Linux systems to bind to port 80.
+# For: http://127.0.0.1:9090/path/to/file
+web_server --port=9090
 ~~~
 
+For details on all of the possible arguments and uses:
+~~~bash
+# Use the 'help' argument
+web_server --help
+~~~
+
+__Please don't forget to run the__ `pub global activate web_server` __command every once and a while__
+to get the latest version of the WebServer package; Pub/Dart does not automatically update the package to
+avoid the risk of breaking changes.
+
+Feel free to view the [CHANGELOG](CHANGELOG.MD) before updating for documentation about whenever there is
+a __breaking change__. Skim quickly by looking for the bold text "__Breaking Change:__" before a
+"Tools > web_server" category change. It is safe to assume there will NOT be a breaking change unless the
+version number increases by 2.x; the 2.0+x format changes, for example, are non-breaking when the number
+after "+" is the only difference.
+
 Features & Use Example (for coders)
-------------------------
+-----------------------------------
 
 Please check out the ["example/"](example/) folder in this package for full details.
 

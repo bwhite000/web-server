@@ -1,6 +1,31 @@
 WebServer Changelog
 ===================
 
+v2.0.0+3 (3.5.2016)
+-------------------
+
+### Tool Changes
+
+* `web_server` - pub global
+  * The developer can now pass a `--port=<port-number>` argument to the executable in the command line to
+    specify a specific port, not just the default 8080, for the web server to bind itself to; e.g.
+    `web_server --port=80`
+  * Added an interpretation of the `--help` or `-h` argument to output details into the terminal about the
+    executable and its functionality.
+  * Minor understandability improvement to the output terminal log when the server is started.
+  * Added another optional developer command line argument for `--host=<address>` to allow binding to a
+    specific address, such as only `127.0.0.1`; the default value is `0.0.0.0`.
+    
+### Documentation Changes
+* ReadMe
+  * Changed the filename to uppercase to be more inline with README file naming formats.
+  * Updated the examples to reflect the new parameters in the web_server tool.
+  * Added the very important details about reminding developers to run `pub global activate` on the package
+    every once and a while to get the latest updates; also included details about easily checking for breaking
+    changes before updating; hopefully the details will make it not-so-scary to update.
+* ChangeLog
+  * Changed the filename to uppercase to be more inline with CHANGELOG file naming formats.
+
 v2.0.0+2 (1.13.2016)
 --------------------
 
