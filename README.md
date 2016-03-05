@@ -50,7 +50,7 @@ __Please don't forget to run the__ `pub global activate web_server` __command ev
 to get the latest version of the WebServer package; Pub/Dart does not automatically update the package to
 avoid the risk of breaking changes.
 
-Feel free to view the [CHANGELOG](CHANGELOG.MD) before updating for documentation about whenever there is
+Feel free to view the [CHANGELOG](CHANGELOG.md) before updating for documentation about whenever there is
 a __breaking change__. Skim quickly by looking for the bold text "__Breaking Change:__" before a
 "Tools > web_server" category change. It is safe to assume there will NOT be a breaking change unless the
 version number increases by 2.x; the 2.0+x format changes, for example, are non-breaking when the number
