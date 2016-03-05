@@ -16,7 +16,7 @@ v2.0.0+3 (3.5.2016)
   * Added another optional developer command line argument for `--host=<address>` to allow binding to a
     specific address, such as only `127.0.0.1`; the default value is `0.0.0.0`.
     
-### Documentation Changes
+### Documentation/Example Changes
 * ReadMe
   * Changed the filename to uppercase to be more inline with README file naming formats.
   * Updated the examples to reflect the new parameters in the web_server tool.
@@ -25,6 +25,11 @@ v2.0.0+3 (3.5.2016)
     changes before updating; hopefully the details will make it not-so-scary to update.
 * ChangeLog
   * Changed the filename to uppercase to be more inline with CHANGELOG file naming formats.
+* Code Example Files
+  * `virtual_directory.dart` - (Issue #5) Updated the InternetAddress.LOOPBACK_IP_V4 to be ANY_IP_V4 in the
+    example to help out developers new to the package with avoiding the frustration of not catching that they
+    were binding only to a local host address when they try out their code on a remote machine and try to access
+    their web server.
 
 v2.0.0+2 (1.13.2016)
 --------------------
