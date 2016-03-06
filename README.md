@@ -66,7 +66,7 @@ Please check out the ["example/"](example/) folder in this package for full deta
 Use Angular-like variables, which will be converted using a helper method from this package (see Dart
 code below).
 
-*=== index.html ===*
+__web/index.html__
 ~~~html
 <body>
   <h1>Welcome, {{username}}!</h1>
@@ -77,7 +77,8 @@ code below).
 
 Then, process variables like PHP on the Dart server side:
 
-*=== main.dart ===*
+__server.dart__
+
 ~~~dart
 import "dart:io";
 import "package:html/parser.dart" as domParser; // https://pub.dartlang.org/packages/html
