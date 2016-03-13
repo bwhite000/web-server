@@ -1,4 +1,4 @@
-part of WebServer.webSocketConnectionManager;
+part of WebSocketConnectionManager;
 
 class WebSocketObjectStore {
   final Map<String, WebSocketConnection> _mainObjectStore = <String, WebSocketConnection>{};

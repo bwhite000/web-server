@@ -1,4 +1,4 @@
-part of WebServer.webServer;
+part of WebServer;
 
 typedef String FunctionBinaryParam(Uint32List encodeMessage, HttpRequest httpRequest, WebSocket ws);
 
@@ -36,7 +36,7 @@ class _WebSocketServerRequestHandler {
     this._onOpenStreamController.add(new WebSocketConnectionData(httpRequest, webSocket));
 
     webSocket.map((final dynamic message) {
-      if (message.runtimeType != String) {
+      if ((message is String) == false) {
         return JSON.decode(this.customDecodeMessage(message, httpRequest, webSocket));
       }
 

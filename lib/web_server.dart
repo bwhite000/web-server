@@ -1,9 +1,14 @@
-library WebServer.webServer;
+/**
+ * A powerful WebServer package to make getting reliable, strong servers
+ * running quickly with many features.
+ */
+library WebServer;
 
 import "dart:io";
 import "dart:async";
-import "dart:convert" show JSON;
+import "dart:convert" show JSON, UTF8, LineSplitter;
 import "dart:typed_data";
+import "package:cache/cache.dart";
 import "package:event_listener/event_listener.dart";
 import "package:path/path.dart" as path;
 import "package:server_logger/server_logger.dart" as ServerLogger;
@@ -13,13 +18,16 @@ part "src/web_server/http_server_request_handler.dart";
 part "src/web_server/web_socket_request_payload.dart";
 part "src/web_server/web_socket_server_request_handler.dart";
 
+/**
+ * The base class for all of the WebServer functionality.
+ */
 class WebServer {
   final InternetAddress address;
   final int port;
   final bool hasHttpServer;
   final bool hasWebSocketServer;
   final bool isSecure;
-  _HttpServerRequestHandler httpServerHandler;
+  HttpServerRequestHandler httpServerHandler;
   _WebSocketServerRequestHandler webSocketServerHandler;
   final List<String> allowedMethods;
   final Duration responseDeadline;
@@ -28,47 +36,59 @@ class WebServer {
     final bool this.hasHttpServer: false,
     final bool this.hasWebSocketServer: false,
     final bool enableCompression: true,
-    final bool this.isSecure: false,
-    final String certificateName,
-    final List<String> this.allowedMethods: const <String>['GET', 'POST'],
-    final Duration this.responseDeadline: const Duration(seconds: 20)
-  }) {
+    final List<String> this.allowedMethods,
+    final Duration this.responseDeadline: const Duration(seconds: 30)
+  }) : this.isSecure = false {
     if (this.hasHttpServer == false && this.hasWebSocketServer == false) {
       return;
     }
 
     if (this.hasHttpServer) {
-      this.httpServerHandler = new _HttpServerRequestHandler();
+      this.httpServerHandler = new HttpServerRequestHandler();
     }
 
     if (this.hasWebSocketServer) {
       this.webSocketServerHandler = new _WebSocketServerRequestHandler();
     }
 
-    if (this.isSecure) {
-      throw "Secure server binding is not supported at this time.";
+    HttpServer.bind(address, port).then((final HttpServer httpServer) {
+      httpServer.autoCompress = enableCompression; // Enable GZIP?
 
-      SecureSocket.initialize(useBuiltinRoots: true);
+      httpServer.listen(this._onRequest);
+    });
+  }
 
-      HttpServer.bindSecure(address, port, certificateName: certificateName).then((final HttpServer httpServer) {
-        httpServer.autoCompress = enableCompression; // Enable GZIP
-
-        httpServer.listen(this._onRequest);
-      });
-    } else {
-      HttpServer.bind(address, port).then((final HttpServer httpServer) {
-        httpServer.autoCompress = enableCompression; // Enable GZIP
-
-        httpServer.listen(this._onRequest);
-      });
+  WebServer.secure(final InternetAddress this.address, final int this.port, final SecurityContext securityContext, {
+    final bool this.hasHttpServer: false,
+    final bool this.hasWebSocketServer: false,
+    final bool enableCompression: true,
+    final List<String> this.allowedMethods,
+    final Duration this.responseDeadline: const Duration(seconds: 30)
+  }) : this.isSecure = true {
+    if (this.hasHttpServer == false && this.hasWebSocketServer == false) {
+      return;
     }
+
+    if (this.hasHttpServer) {
+      this.httpServerHandler = new HttpServerRequestHandler();
+    }
+
+    if (this.hasWebSocketServer) {
+      this.webSocketServerHandler = new _WebSocketServerRequestHandler();
+    }
+
+    HttpServer.bindSecure(address, port, securityContext).then((final HttpServer httpServer) {
+      httpServer.autoCompress = enableCompression; // Enable GZIP?
+
+      httpServer.listen(this._onRequest);
+    });
   }
 
   void _onRequest(final HttpRequest httpRequest) {
     if (httpRequest.method == null ||
         httpRequest.method.isEmpty ||
         httpRequest.method.length > 16 ||
-        this.allowedMethods.contains(httpRequest.method) == false)
+        (this.allowedMethods != null && this.allowedMethods.contains(httpRequest.method) == false))
     {
       httpRequest.response
           ..statusCode = HttpStatus.FORBIDDEN
