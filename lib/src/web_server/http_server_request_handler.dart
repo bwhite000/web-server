@@ -318,9 +318,8 @@ class HttpServerRequestHandler {
     if (await file.exists()) {
       // The file exists, lets configure the http request and serve it
 
-      String _fileContents;
+      String _fileContents; // The contents of the file, if caching is enabled
 
-      /// The contents of the file, if caching is enabled
       final ContentType _contentType = getContentTypeForFilepathExtension(pathToFile);
 
       this._possibleFiles[urlData.path] = urlData.id;
