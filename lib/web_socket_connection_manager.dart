@@ -5,7 +5,7 @@
 library WebSocketConnectionManager;
 
 import "dart:io";
-import "dart:convert" show JSON;
+import "package:dart2_constant/convert.dart" as convert;
 import "package:server_logger/server_logger.dart" as ServerLogger;
 
 part 'src/web_socket_connection_manager/web_socket_object_store.dart';
@@ -19,7 +19,7 @@ abstract class WebSocketConnectionManager {
     ServerLogger.log('Broadcasting message to (${WebSocketConnectionManager.objectStore.length}) clients: \n$message');
 
     WebSocketConnectionManager.objectStore.values.forEach((final WebSocketConnection webSocketConnection) {
-      webSocketConnection.webSocket.add(JSON.encode(message));
+      webSocketConnection.webSocket.add(convert.json.encode(message));
     });
   }
 }

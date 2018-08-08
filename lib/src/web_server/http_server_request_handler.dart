@@ -173,7 +173,7 @@ class HttpServerRequestHandler {
           } else { // Respond with 404 error because nothing was matched.
             if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.log('No registered url match found.');
 
-            this._callListenerForErrorDocument(HttpStatus.NOT_FOUND, httpRequest);
+            this._callListenerForErrorDocument(io.HttpStatus.notFound, httpRequest);
           }
         }
       }
@@ -242,12 +242,12 @@ class HttpServerRequestHandler {
 
   _AuthCheckResults _checkAuthFromRequest(final HttpRequest httpRequest, final _PathDataWithAuth acceptedCredentialsPathData) {
     // If no auth header supplied
-    if (httpRequest.headers.value(HttpHeaders.AUTHORIZATION) == null) {
+    if (httpRequest.headers.value(io.HttpHeaders.authorizationHeader) == null) {
       return const _AuthCheckResults(false);
     }
 
     const int MAX_ALLOWED_CHARACTER_RANGE = 256;
-    final String authHeaderStr = httpRequest.headers.value(HttpHeaders.AUTHORIZATION); // Get the provided auth info
+    final String authHeaderStr = httpRequest.headers.value(io.HttpHeaders.authorizationHeader); // Get the provided auth info
     final int trimRange = (authHeaderStr.length <= MAX_ALLOWED_CHARACTER_RANGE) ? authHeaderStr.length : MAX_ALLOWED_CHARACTER_RANGE; // Determine subStr amt
     final String clientProvidedAuthInfo = authHeaderStr.substring(0, trimRange).replaceFirst(new RegExp('^Basic '), ''); // Remove the prefixed "Basic " from auth header
 
@@ -261,8 +261,8 @@ class HttpServerRequestHandler {
   /// Helper for sending an HTTP 401 Auth required response
   static void sendRequiredBasicAuthResponse(final HttpRequest httpRequest, final String errMessage) {
     httpRequest.response
-        ..statusCode = HttpStatus.UNAUTHORIZED
-        ..headers.add(HttpHeaders.WWW_AUTHENTICATE, 'Basic realm="Enter credentials"')
+        ..statusCode = io.HttpStatus.unauthorized
+        ..headers.add(io.HttpHeaders.wwwAuthenticateHeader, 'Basic realm="Enter credentials"')
         ..write(errMessage)
         ..close();
   }
@@ -270,7 +270,7 @@ class HttpServerRequestHandler {
   /// Helper for sending a HTTP 404 response with an optional custom HTML error message.
   static void sendPageNotFoundResponse(final HttpRequest httpRequest, [final String responseVal = '404 - Page not found']) {
     httpRequest.response
-        ..statusCode = HttpStatus.NOT_FOUND
+        ..statusCode = io.HttpStatus.notFound
         ..headers.contentType = new ContentType('text', 'html', charset: 'utf-8')
         ..write(responseVal)
         ..close();
@@ -279,7 +279,7 @@ class HttpServerRequestHandler {
   /// Helper for sending an HTTP 500 response with an optional custom HTML error message.
   static void sendInternalServerErrorResponse(final HttpRequest httpRequest, [final String responseVal = '500 - Internal Server Error']) {
     httpRequest.response
-        ..statusCode = HttpStatus.INTERNAL_SERVER_ERROR
+        ..statusCode = io.HttpStatus.internalServerError
         ..headers.contentType = new ContentType('text', 'html', charset: 'utf-8')
         ..write(responseVal)
         ..close();
@@ -320,26 +320,28 @@ class HttpServerRequestHandler {
 
       this._possibleFiles[urlData.path] = urlData.id;
 
-      this._functionStore[urlData.id].listen((final HttpRequest httpRequest) async {
-        String _localFileContents;
+      this._functionStore[urlData.id].listen((final dynamic httpRequest) async {
+        if (httpRequest is HttpRequest) {
+          String _localFileContents;
 
-        if (enableCaching == true) { // Use a cached file, or initialize the cached file, if enabled
-          if (_fileContents == null) { // If a version has not been cached before
-            _fileContents = await file.readAsString();
+          if (enableCaching == true) { // Use a cached file, or initialize the cached file, if enabled
+            if (_fileContents == null) { // If a version has not been cached before
+              _fileContents = await file.readAsString();
+            }
+
+            _localFileContents = _fileContents;
+          } else if (enableCaching == false) { // Read freshly, if caching is not enabled
+            _localFileContents = await file.readAsString();
           }
 
-          _localFileContents = _fileContents;
-        } else if (enableCaching == false) { // Read freshly, if caching is not enabled
-          _localFileContents = await file.readAsString();
-        }
+          if (_contentType != null) {
+            httpRequest.response.headers.contentType = _contentType;
+          }
 
-        if (_contentType != null) {
-          httpRequest.response.headers.contentType = _contentType;
-        }
-
-        httpRequest.response
+          httpRequest.response
             ..write(_localFileContents)
             ..close();
+        }
       });
     } else {
       if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.error('The file at path ($pathToFile) was not found in the filesystem; unable to serve it.');
@@ -440,7 +442,7 @@ class HttpServerRequestHandler {
         final FileStat fileStat = await entity.stat();
 
         // Don't process if this is not a file.
-        if (fileStat.type != FileSystemEntityType.FILE) {
+        if (fileStat.type != io.FileSystemEntityType.file) {
           return;
         }
 
@@ -558,7 +560,7 @@ class HttpServerRequestHandler {
       } else { // File not found
         if (HttpServerRequestHandler.shouldBeVerbose) ServerLogger.error('_HttpServerRequestHandler::_serveStandardFile(String, HttpRequest) - File not found at path: ($pathToFile)');
 
-        this._callListenerForErrorDocument(HttpStatus.NOT_FOUND, httpRequest);
+        this._callListenerForErrorDocument(io.HttpStatus.notFound, httpRequest);
       }
     } catch(err, stackTrace) {
       ServerLogger.error(err);

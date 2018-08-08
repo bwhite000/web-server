@@ -1,10 +1,11 @@
 import "dart:io";
 import "dart:async";
+import "package:dart2_constant/io.dart" as io;
 import "package:web_server/web_server.dart" as webServer;
 
 Future<Null> main() async {
   // Initialize the WebServer
-  final webServer.WebServer localWebServer = new webServer.WebServer(InternetAddress.ANY_IP_V4, 8080,
+  final webServer.WebServer localWebServer = new webServer.WebServer(io.InternetAddress.anyIPv4, 8080,
       hasHttpServer: true);
 
   // Log out some of the connection information.

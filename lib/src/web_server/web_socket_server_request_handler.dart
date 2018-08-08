@@ -37,12 +37,14 @@ class _WebSocketServerRequestHandler {
 
     webSocket.map((final dynamic message) {
       if ((message is String) == false) {
-        return JSON.decode(this.customDecodeMessage(message, httpRequest, webSocket));
+        return convert.json.decode(this.customDecodeMessage(message, httpRequest, webSocket));
       }
 
-      return JSON.decode(message);
-    }).listen((final Map<String, dynamic> json) {
-      this.onMessage(json, httpRequest, webSocket);
+      return convert.json.decode(message);
+    }).listen((final dynamic json) {
+      if (json is Map<String, dynamic>) {
+        this.onMessage(json, httpRequest, webSocket);
+      }
     }, onError: (final dynamic err) {
       ServerLogger.error(err);
 

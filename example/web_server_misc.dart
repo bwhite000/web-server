@@ -1,9 +1,10 @@
 import "dart:io";
+import "package:dart2_constant/io.dart" as io;
 import "package:web_server/web_server.dart";
 
 void main() {
   // Initialize and bind the HTTP and WebSocket WebServer
-  final WebServer localWebServer = new WebServer(InternetAddress.ANY_IP_V4, 8080,
+  final WebServer localWebServer = new WebServer(io.InternetAddress.anyIPv4, 8080,
       hasHttpServer: true, hasWebSocketServer: true);
 
   // Log out some of the connection information
@@ -41,15 +42,15 @@ void main() {
 
             // Respond to the Url request
             httpRequest.response
-                ..headers.contentType = ContentType.JSON // Set the 'content-type' header as JSON
+                ..headers.contentType = io.ContentType.json // Set the 'content-type' header as JSON
                 ..write(apiResponse.toJsonEncoded()) // Export as a JSON encoded string
                 ..close();
           })
 
       // Add a custom function for handling the request in case of the error code supplied as the parameter.
-      ..onErrorDocument(HttpStatus.NOT_FOUND, (final HttpRequest httpRequest) {
+      ..onErrorDocument(io.HttpStatus.notFound, (final HttpRequest httpRequest) {
         httpRequest.response
-            ..statusCode = HttpStatus.NOT_FOUND
+            ..statusCode = io.HttpStatus.notFound
             ..headers.contentType = new ContentType('text', 'html', charset: 'utf-8')
             ..write('<h1>404 Error accessing: ${httpRequest.requestedUri.path}</h1>')
             ..close();
@@ -57,7 +58,7 @@ void main() {
 
   // Attach WebSocket command listeners and base events
   localWebServer.webSocketServerHandler
-      ..on[0].listen((final WebSocketRequestPayload requestPayload) { /*...*/ })
+      ..on[0].listen((final dynamic requestPayload) { /*...*/ })
       ..onConnectionOpen.listen((final WebSocketConnectionData connectionData) { /*...*/ })
       ..onConnectionError.listen((final WebSocket webSocket) { /*...*/ })
       ..onConnectionClose.listen((final WebSocket webSocket) { /*...*/ });

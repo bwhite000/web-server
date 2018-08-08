@@ -1,5 +1,6 @@
 import "dart:io";
 import "dart:async";
+import "package:dart2_constant/io.dart" as io;
 import "package:web_server/web_server.dart" as webServer;
 
 /**
@@ -11,7 +12,7 @@ Future<Null> main(final List<String> args) async {
     "h": "help"
   };
   final Map<String, dynamic> cmdLineArgsMap = _parseCmdLineArgs(args, SHORTHAND_TO_FULL_CMD_LINE_ARG_KEYS);
-  InternetAddress hostAddr = InternetAddress.ANY_IP_V4;
+  InternetAddress hostAddr = io.InternetAddress.anyIPv4;
   int portNumber = 8080; // Default value.
 
   if (cmdLineArgsMap.containsKey('help')) {
@@ -48,15 +49,15 @@ Future<Null> main(final List<String> args) async {
 
   // Handle errors
   localWebServer.httpServerHandler
-      ..onErrorDocument(HttpStatus.NOT_FOUND, (final HttpRequest httpRequest) {
+      ..onErrorDocument(io.HttpStatus.notFound, (final HttpRequest httpRequest) {
         // Use the helper method from this WebServer package
         webServer.HttpServerRequestHandler.sendPageNotFoundResponse(httpRequest,
-            '<h1>${HttpStatus.NOT_FOUND} - Page not found</h1>');
+            '<h1>${io.HttpStatus.notFound} - Page not found</h1>');
       })
-      ..onErrorDocument(HttpStatus.INTERNAL_SERVER_ERROR, (final HttpRequest httpRequest) {
+      ..onErrorDocument(io.HttpStatus.internalServerError, (final HttpRequest httpRequest) {
         // Use the helper method from this WebServer package
         webServer.HttpServerRequestHandler.sendInternalServerErrorResponse(httpRequest,
-            '<h1>${HttpStatus.INTERNAL_SERVER_ERROR} - Internal Server Error</h1>');
+            '<h1>${io.HttpStatus.internalServerError} - Internal Server Error</h1>');
       });
 }
 
