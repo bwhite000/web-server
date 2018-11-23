@@ -1,10 +1,10 @@
 name: web_server
-version: 2.0.0+3
+version: 2.0.1
 author: Brandon White <jennexproject+webserver@gmail.com>
 description: An efficient server library for quickly creating a WebServer and handling HTTP requests, WebSocket connections, and API requests.
 homepage: https://github.com/bwhite000/web-server
 environment:
-  sdk: '>=1.9.0 <2.0.0'
+  sdk: '>=1.9.0 <3.0.0'
 documentation: http://jennex.it/github/bwhite000/web-server/docs/
 dependencies:
   cache:
@@ -16,5 +16,9 @@ dependencies:
   server_logger:
     git: https://github.com/bwhite000/server-logger.git
     version: '>=0.1.0 <2.0.0'
+  dart2_constant:
+    git:
+      url: https://github.com/Stargator/dart2_constant.git
+      ref: 1.0.3+dart2
 executables:
   web_server:

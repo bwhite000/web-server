@@ -78,7 +78,7 @@ class ApiResponse {
    * Calls [toJson], then processes it through [JSON.encode()] before returning.
    */
   String toJsonEncoded() {
-    return JSON.encode(this.toJson());
+    return convert.json.encode(this.toJson());
   }
 }
 
@@ -112,6 +112,6 @@ class ApiErrorResponse {
   }
 
   String toJsonEncoded() {
-    return JSON.encode(this.toJson());
+    return convert.json.encode(this.toJson());
   }
 }

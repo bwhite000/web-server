@@ -6,9 +6,10 @@ library WebServer;
 
 import "dart:io";
 import "dart:async";
-import "dart:convert" show JSON, UTF8, LineSplitter;
 import "dart:typed_data";
 import "package:cache/cache.dart";
+import 'package:dart2_constant/convert.dart' as convert;
+import 'package:dart2_constant/io.dart' as io;
 import "package:event_listener/event_listener.dart";
 import "package:path/path.dart" as path;
 import "package:server_logger/server_logger.dart" as ServerLogger;
@@ -91,7 +92,7 @@ class WebServer {
         (this.allowedMethods != null && this.allowedMethods.contains(httpRequest.method) == false))
     {
       httpRequest.response
-          ..statusCode = HttpStatus.FORBIDDEN
+          ..statusCode = io.HttpStatus.forbidden
           ..close();
       return;
     }
@@ -107,7 +108,7 @@ class WebServer {
       this.httpServerHandler._onHttpRequest(httpRequest);
     } else {
       httpRequest.response
-          ..statusCode = HttpStatus.FORBIDDEN
+          ..statusCode = io.HttpStatus.forbidden
           ..close();
     }
   }
